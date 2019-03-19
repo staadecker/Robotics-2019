@@ -1,6 +1,3 @@
-import ev3dev2
-
-
 class Sequence:
     def start(self):
         pass

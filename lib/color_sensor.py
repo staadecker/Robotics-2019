@@ -17,7 +17,7 @@ class BaseColorSensor(abc.ABC):
 
 
 # TODO : Test
-class ColorSensor(BaseColorSensor):
+class EV3ColorSensor(BaseColorSensor):
     def __init__(self, port):
         self.color_sensor = ColorSensor(port)
         self.color_sensor.mode = ColorSensor.MODE_COL_COLOR

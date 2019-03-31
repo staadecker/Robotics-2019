@@ -1,26 +1,24 @@
-from ev3dev2.sensor.lego import ColorSensor
+import ev3dev2.sensor.lego as lego_sensor
 
 
-class ColorSensorWrapper:
+class ColorSensor:
     """Represents a color sensor"""
 
-    def __init__(self, port):
-        self.sensor = ColorSensor(port)
+    BLACK = lego_sensor.ColorSensor.COLOR_BLACK
+    WHITE = lego_sensor.ColorSensor.COLOR_WHITE
+    GREEN = lego_sensor.ColorSensor.COLOR_GREEN
+    BLUE = lego_sensor.ColorSensor.COLOR_BLUE
+    RED = lego_sensor.ColorSensor.COLOR_RED
+    YELLOW = lego_sensor.ColorSensor.COLOR_YELLOW
+    NO_COLOR = lego_sensor.ColorSensor.COLOR_NOCOLOR
 
-        self.mode = self.sensor.mode # Used to save time so not to call the get method each time
+    def __init__(self, port):
+        self.sensor = lego_sensor.ColorSensor(port)
 
     def get_color(self):
         """Returns the color under the sensor"""
-        if self.mode != ColorSensor.MODE_COL_COLOR:
-            self.sensor.mode = ColorSensor.MODE_COL_COLOR
-            self.mode = ColorSensor.MODE_COL_COLOR
-
-        return self.sensor.value(1)
+        return self.sensor.color
 
     def get_reflected(self):
         """Returns the amount of light reflected (percentage)"""
-        if self.mode != ColorSensor.MODE_COL_REFLECT:
-            self.sensor.mode = ColorSensor.MODE_COL_REFLECT
-            self.mode = ColorSensor.MODE_COL_REFLECT
-
-        return self.sensor.value(1)
+        return self.sensor.reflected_light_intensity

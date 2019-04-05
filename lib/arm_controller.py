@@ -17,6 +17,8 @@ class ArmController:
         '''Resets arm to raised position'''
         if self.arm_current_position != 0:
             self.arm.on_for_seconds(SpeedPercent(speed), 2, block=block)
+            if self.arm.is_stalled:
+                self.arm.stop()
 
         self.arm_current_position = 0
 

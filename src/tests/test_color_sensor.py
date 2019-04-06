@@ -1,7 +1,7 @@
 import unittest
-import util
-from color_sensor import ColorSensor
-import constants
+from tests import util
+from lib.color_sensor import ColorSensor
+from lib import constants
 
 
 @unittest.skipUnless(util.is_running_on_ev3(), "Requires EV3")
@@ -18,7 +18,7 @@ class TestEV3ColorSensor(unittest.TestCase):
 
     def test_reflection_mode(self):
         result = self.color_sensor.get_reflected()
-        self.assertTrue(util.get_user_answer(f"Reflection percentage is: {result}. Does this make sense?"))
+        self.assertTrue(util.get_user_answer("Reflection percentage is: " + str(result) + ". Does this make sense?"))
 
 
 if __name__ == '__main__':

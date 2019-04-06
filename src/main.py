@@ -1,7 +1,7 @@
-from movement_controller import MovementController
-from color_sensor import ColorSensor
-from line_follower import LineFollower, StopAtCrossLine
-import constants
+from lib.movement_controller import MovementController
+from lib.color_sensor import ColorSensor
+from lib.line_follower import LineFollower, StopAtCrossLine
+from lib import constants
 from ev3dev2.button import Button
 
 DEBUGGING = True
@@ -23,7 +23,8 @@ class Main:
 
     def run(self):
         self.robot.movement_controller.travel(10)
-        self.line_follower.follow_on_right(StopAtCrossLine(self.robot.left_color_sensor), callback=self.read_info_blocks_callback)
+        self.line_follower.follow_on_right(StopAtCrossLine(self.robot.left_color_sensor),
+                                           callback=self.read_info_blocks_callback)
         self.robot.movement_controller.rotate(90)
         pass
 

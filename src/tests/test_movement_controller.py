@@ -1,6 +1,6 @@
 import unittest
-import movement_controller
-import util
+from lib import movement_controller
+from tests import util
 
 
 @unittest.skipUnless(util.is_running_on_ev3(), "Requires EV3")
@@ -9,7 +9,7 @@ class TestMovementController(unittest.TestCase):
         self.movement_controller = movement_controller.MovementController()
 
     def test_move_straight(self):
-        self.movement_controller.travel(10)
+        self.movement_controller.travel(30)
         self.assertTrue(util.get_user_answer("Did the robot move forward 10cm?"))
 
     def test_rotate(self):

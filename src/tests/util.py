@@ -15,7 +15,7 @@ def get_user_answer(question):
 
 def is_running_on_ev3():
     try:
-        ev3dev2.button.Button().enter()
+        ev3dev2.button.Button().enter
     except ev3dev2.button.MissingButton:
         return False
     return True

@@ -1,7 +1,7 @@
 import unittest
 import main
-import line_follower
-import util
+from lib import line_follower
+from tests import util
 
 
 @unittest.skipUnless(util.is_running_on_ev3(), "Requires EV3")
@@ -43,3 +43,16 @@ class TestLineFollower(unittest.TestCase):
         self.line_follower.follow_on_right(
             line_follower.get_stop_after_x_intersections(3, self.robot.left_color_sensor))
         self.assertTrue(util.get_user_answer("Did the robot follow the line until reaching the 4th left intersection?"))
+
+
+@unittest.skipUnless(util.is_running_on_ev3(), "Requires EV3")
+class TestSimpleLineFollower(unittest.TestCase):
+    def test_run_forever(self):
+        self.robot = main.Robot()
+        self.line_follower = line_follower.LineFollower(self.robot.movement_controller, self.robot.left_color_sensor,
+                                                        self.robot.right_color_sensor)
+        self.line_follower.follow_on_right(line_follower.StopNever())
+
+
+if __name__ == '__main__':
+    unittest.main()

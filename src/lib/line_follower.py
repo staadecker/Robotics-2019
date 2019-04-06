@@ -1,5 +1,5 @@
-from movement_controller import MovementController
-from color_sensor import ColorSensor
+from lib.movement_controller import MovementController
+from lib.color_sensor import ColorSensor
 from typing import List
 
 import datetime
@@ -26,7 +26,7 @@ class LineFollower:
 
     _MIDDLE_REFLECTION_VALUE = (_WHITE_REFLECTION - _BLACK_REFLECTION) * _FRACTION_OF_DELTA + _BLACK_REFLECTION
 
-    _P_COEF = 1
+    _P_COEF = 0.2
     _D_COEF = 0
 
     def __init__(self, movement_controller: MovementController, left_color_sensor: ColorSensor,
@@ -36,10 +36,10 @@ class LineFollower:
         self.right_color_sensor = right_color_sensor
 
     def follow_on_left(self, stop_indicator: StopIndicator, stop=True, callback=None):
-        self._follow_line(stop_indicator, self.left_color_sensor, False, stop=stop, callback=callback)
+        self._follow_line(stop_indicator, self.left_color_sensor, True, stop=stop, callback=callback)
 
     def follow_on_right(self, stop_indicator: StopIndicator, stop=True, callback=None):
-        self._follow_line(stop_indicator, self.right_color_sensor, True, stop=stop, callback=callback)
+        self._follow_line(stop_indicator, self.right_color_sensor, False, stop=stop, callback=callback)
 
     def _follow_line(self, stop_indicator, color_sensor, inverse_correction, stop=True, callback=None):
         """
@@ -143,6 +143,15 @@ class StopAfterMultiple(StopIndicator):
         self.counter = 0
         for stop_indicator in self.stop_indicators:
             stop_indicator.reset()
+
+
+class StopNever(StopIndicator):
+
+    def should_end(self) -> bool:
+        return False
+
+    def reset(self) -> None:
+        pass
 
 
 def get_stop_after_x_intersections(number_of_intersections_to_pass, color_sensor_to_use):

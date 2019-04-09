@@ -8,7 +8,7 @@ from tests import util
 class TestLineFollower(unittest.TestCase):
     def setUp(self) -> None:
         self.robot = main.Robot()
-        self.line_follower = line_follower.LineFollower(self.robot.movement_controller, self.robot.left_color_sensor,
+        self.line_follower = line_follower.LineFollower(self.robot.mover, self.robot.left_color_sensor,
                                                         self.robot.right_color_sensor)
 
     def test_timed_follow(self):
@@ -47,11 +47,11 @@ class TestLineFollower(unittest.TestCase):
 
 @unittest.skipUnless(util.is_running_on_ev3(), "Requires EV3")
 class TestSimpleLineFollower(unittest.TestCase):
-    def test_run_forever(self):
+    def test_run_ten_seconds(self):
         self.robot = main.Robot()
-        self.line_follower = line_follower.LineFollower(self.robot.movement_controller, self.robot.left_color_sensor,
+        self.line_follower = line_follower.LineFollower(self.robot.mover, self.robot.left_color_sensor,
                                                         self.robot.right_color_sensor)
-        self.line_follower.follow_on_right(line_follower.StopNever())
+        self.line_follower.follow_on_left(line_follower.StopAfterTime(10000))
 
 
 if __name__ == '__main__':

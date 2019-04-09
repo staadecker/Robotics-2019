@@ -1,9 +1,10 @@
-from lib.movement_controller import MovementController
-from lib.color_sensor import ColorSensor
+from lib.motors import Mover
+from lib.sensors import ColorSensor
 from typing import List
 
 import datetime
 import abc
+import lib.robot
 
 
 class StopIndicator(abc.ABC):
@@ -20,16 +21,19 @@ class StopIndicator(abc.ABC):
 class LineFollower:
     """Responsible for following a line using color sensors"""
 
-    _WHITE_REFLECTION = 1
-    _BLACK_REFLECTION = 0
+    _WHITE_REFLECTION = 85
+    _BLACK_REFLECTION = 10
     _FRACTION_OF_DELTA = 0.5
+
+    _SPEED = 40
 
     _MIDDLE_REFLECTION_VALUE = (_WHITE_REFLECTION - _BLACK_REFLECTION) * _FRACTION_OF_DELTA + _BLACK_REFLECTION
 
-    _P_COEF = 0.2
-    _D_COEF = 0
+    _P_COEF = 0.3
+    _D_COEF = 1
+    _I_COEF = 0
 
-    def __init__(self, movement_controller: MovementController, left_color_sensor: ColorSensor,
+    def __init__(self, movement_controller: Mover, left_color_sensor: ColorSensor,
                  right_color_sensor: ColorSensor):
         self.movement_controller = movement_controller
         self.left_color_sensor = left_color_sensor
@@ -52,14 +56,27 @@ class LineFollower:
         """
 
         last_error = 0
+        total_error = 0
         flip_multiplication = -1 if inverse_correction else 1
 
         while not stop_indicator.should_end():
             error = self._MIDDLE_REFLECTION_VALUE - color_sensor.get_reflected()
 
-            self.movement_controller.steer(
-                (LineFollower._P_COEF * error + LineFollower._D_COEF * (error - last_error)) * flip_multiplication
-            )
+            total_error += error
+
+            direction = (LineFollower._P_COEF * error + LineFollower._D_COEF * (
+                    error - last_error) + LineFollower._I_COEF * total_error) * flip_multiplication
+
+            # print(direction)
+
+            if direction > 100:
+                direction = 100
+                print("Warning: Steering at +100")
+            if direction < -100:
+                direction = -100
+                print("Warning: Steering at -100")
+
+            self.movement_controller.steer(direction, speed=self._SPEED)
 
             last_error = error
 
@@ -97,7 +114,13 @@ class StopAtCrossLine(StopIndicator):
         self.color_sensor = color_sensor
 
     def should_end(self) -> bool:
-        return self.color_sensor.get_color() == ColorSensor.BLACK
+        color_reading = self.color_sensor.get_color()
+        print(color_reading)
+        should_end = color_reading == ColorSensor.BLACK or color_reading == ColorSensor.BROWN
+        if should_end:
+            lib.robot.Robot.beep()
+
+        return should_end
 
     def reset(self) -> None:
         pass

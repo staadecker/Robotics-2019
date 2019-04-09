@@ -1,6 +1,6 @@
 import unittest
 from tests import util
-from lib.color_sensor import ColorSensor
+from lib.sensors import ColorSensor
 from lib import constants
 
 

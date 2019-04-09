@@ -1,43 +1,44 @@
-from lib.movement_controller import MovementController
-from lib.color_sensor import ColorSensor
-from lib.line_follower import LineFollower, StopAtCrossLine
-from lib import constants
+import lib.line_follower
 from ev3dev2.button import Button
+from lib.robot import Robot
 
 DEBUGGING = True
 
 
-class Robot:
-    def __init__(self):
-        self.movement_controller = MovementController()
-        self.left_color_sensor = ColorSensor(constants.LEFT_LINE_COLOR_SENSOR)
-        self.right_color_sensor = ColorSensor(constants.RIGHT_LINE_COLOR_SENSOR)
-
-
 class Main:
     def __init__(self):
-        self.robot = Robot()
+        self.robot = None
+        self.line_follower = None
 
-        self.line_follower = LineFollower(self.robot.movement_controller, self.robot.left_color_sensor,
-                                          self.robot.right_color_sensor)
+    def setup(self):
+        self.robot = Robot()
+        self.line_follower = lib.line_follower.LineFollower(
+            self.robot.mover,
+            self.robot.left_color_sensor,
+            self.robot.right_color_sensor
+        )
 
     def run(self):
-        self.robot.movement_controller.travel(10)
-        self.line_follower.follow_on_right(StopAtCrossLine(self.robot.left_color_sensor),
-                                           callback=self.read_info_blocks_callback)
-        self.robot.movement_controller.rotate(90)
-        pass
+        self.robot.mover.travel(100)
+        self.line_follower.follow_on_right(lib.line_follower.StopAtCrossLine(self.robot.left_color_sensor),
+                                           callback=self.read_info_blocks_callback, stop=False)
+        self.robot.mover.rotate(degrees=90, clockwise=False, arc_radius=40)
+        self.line_follower.follow_on_right(
+            lib.line_follower.get_stop_after_x_intersections(5, self.robot.left_color_sensor))
 
     def read_info_blocks_callback(self):
         pass  # TODO
 
-    @staticmethod
-    def wait_for_button_press():
-        Button.wait_for_released('enter')
-
 
 if __name__ == '__main__':
     main = Main()
-    if not DEBUGGING:
-        main.wait_for_button_press()
-    main.run()
+
+    try:
+        main.setup()
+        if not DEBUGGING:
+            Button.wait_for_released('enter')
+        main.run()
+    finally:
+        robot = main.robot
+        if robot is not None:
+            robot.tear_down()

@@ -11,6 +11,7 @@ class ColorSensor:
     RED = lego_sensor.ColorSensor.COLOR_RED
     YELLOW = lego_sensor.ColorSensor.COLOR_YELLOW
     NO_COLOR = lego_sensor.ColorSensor.COLOR_NOCOLOR
+    BROWN = lego_sensor.ColorSensor.COLOR_BROWN
 
     def __init__(self, port):
         self.sensor = lego_sensor.ColorSensor(port)

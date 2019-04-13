@@ -1,6 +1,7 @@
 from lib.motors import Mover
 from lib.sensors import ColorSensor
 from typing import List
+import lib.constants
 
 import datetime
 import abc
@@ -29,21 +30,19 @@ class LineFollower:
 
     _MIDDLE_REFLECTION_VALUE = (_WHITE_REFLECTION - _BLACK_REFLECTION) * _FRACTION_OF_DELTA + _BLACK_REFLECTION
 
-    _P_COEF = 0.3
-    _D_COEF = 1
+    _P_COEF = 0.25
+    _D_COEF = 1.25
     _I_COEF = 0
 
-    def __init__(self, movement_controller: Mover, left_color_sensor: ColorSensor,
-                 right_color_sensor: ColorSensor):
+    def __init__(self, movement_controller: Mover):
         self.movement_controller = movement_controller
-        self.left_color_sensor = left_color_sensor
-        self.right_color_sensor = right_color_sensor
+        self.color_sensor = ColorSensor(lib.constants.LINE_FOLLOWER_COLOR_SENSOR)
 
     def follow_on_left(self, stop_indicator: StopIndicator, stop=True, callback=None):
-        self._follow_line(stop_indicator, self.left_color_sensor, True, stop=stop, callback=callback)
+        self._follow_line(stop_indicator, self.color_sensor, True, stop=stop, callback=callback)
 
     def follow_on_right(self, stop_indicator: StopIndicator, stop=True, callback=None):
-        self._follow_line(stop_indicator, self.right_color_sensor, False, stop=stop, callback=callback)
+        self._follow_line(stop_indicator, self.color_sensor, False, stop=stop, callback=callback)
 
     def _follow_line(self, stop_indicator, color_sensor, inverse_correction, stop=True, callback=None):
         """
@@ -179,10 +178,9 @@ class StopNever(StopIndicator):
 
 def get_stop_after_x_intersections(number_of_intersections_to_pass, color_sensor_to_use):
     return StopAfterMultiple([
-        StopAfterXTimes(number_of_intersections_to_pass,
+        StopAfterXTimes(number_of_intersections_to_pass + 1,
                         StopAfterMultiple([
-                            StopAtCrossLine(color_sensor_to_use),
-                            StopAfterTime(1000)])
-                        ),
-        StopAtCrossLine(color_sensor_to_use)
+                            StopAfterTime(300),
+                            StopAtCrossLine(color_sensor_to_use)])
+                        )
     ])

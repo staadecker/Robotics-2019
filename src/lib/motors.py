@@ -10,11 +10,11 @@ class ArmController:
     """Class to control arm of robot"""
 
     _ACCELERATION = 100  # Time in milliseconds the motor would take to reach 100% max speed from not moving
-    _DEFAULT_SPEED = 30
+    _DEFAULT_SPEED = 10
 
     # Degrees predictions for arm
-    _DEG_TO_FIBRE_OPTIC = 135  # TODO Correct
-    _DEG_TO_DEVICE = 90
+    _DEG_TO_FIBRE_OPTIC = 115  # TODO Correct
+    _DEG_TO_DEVICE = 70
 
     def __init__(self):
         self._arm = ev3dev2.motor.LargeMotor(lib.constants.ARM_MOTOR_PORT)
@@ -29,6 +29,8 @@ class ArmController:
         if not self._arm_is_raised:
             self._arm.on(speed * -1)
             self._arm.wait_until_not_moving()
+
+            self._arm.on_for_degrees(speed, 20)
 
             self._arm_is_raised = True
 
@@ -55,20 +57,20 @@ class SwivelController:
     _DEFAULT_SPEED = 40  # In percent
 
     def __init__(self):
-        self._swivel = ev3dev2.motor.LargeMotor(lib.constants.ARM_MOTOR_PORT)
+        self._swivel = ev3dev2.motor.MediumMotor(lib.constants.SWIVEL_MOTOR_PORT)
         self._swivel.ramp_up_sp = self._ACCELERATION
         self._swivel.ramp_down_sp = self._ACCELERATION
-        self._swivel.position = self._convert_deg_to_pos(-90)
+        self._swivel.position = self._convert_deg_to_pos(90)
         self._swivel.stop_action = ev3dev2.motor.Motor.STOP_ACTION_HOLD
 
     def point_forward(self, speed=_DEFAULT_SPEED, block=True):
         self._swivel.on_to_position(speed, 0, block=block)
 
     def point_left(self, speed=_DEFAULT_SPEED, block=True):
-        self._swivel.on_to_position(speed, self._convert_deg_to_pos(-90), block=block)
+        self._swivel.on_to_position(speed, self._convert_deg_to_pos(90), block=block)
 
     def point_right(self, speed=_DEFAULT_SPEED, block=True):
-        self._swivel.on_to_position(speed, self._convert_deg_to_pos(90), block=block)
+        self._swivel.on_to_position(speed, self._convert_deg_to_pos(-90), block=block)
 
     def point_backwards(self, speed=_DEFAULT_SPEED, block=True):
         self._swivel.on_to_position(speed, self._convert_deg_to_pos(180), block=block)
@@ -84,6 +86,7 @@ class Mover:
     _CHASSIS_RADIUS = 57.5
 
     _DEFAULT_SPEED = 50
+    _DEFAULT_ROTATE_SPEED = 15
 
     def __init__(self):
         self._control = ev3dev2.motor.MoveTank(constants.LEFT_MOTOR_PORT, constants.RIGHT_MOTOR_PORT)
@@ -93,13 +96,15 @@ class Mover:
         degrees_for_wheel = Mover._convert_rad_to_deg(Mover._convert_distance_to_rad(distance))
         self._control.on_for_degrees(speed, speed, degrees_for_wheel, block=block)
 
-    def rotate(self, degrees=None, arc_radius=0,  clockwise=True, speed=_DEFAULT_SPEED, block=True) -> None:
+    def rotate(self, degrees=None, arc_radius=0, clockwise=True, speed=_DEFAULT_ROTATE_SPEED, block=True,
+               backwards=False) -> None:
         """
         :param arc_radius: the radius or tightness of the turn in mm. 0 means the robot is turning on itself.
         :param degrees: the degrees the robot should rotate
         :param clockwise: the direction of rotation
         :param speed: the speed the fastest wheel should travel
         :param block: whether to return immediately or to wait for end of movement
+        :param backwards: whether the rotate movement should move the robot backwards
         """
         if degrees <= 0:
             raise ValueError("Can't rotate a negative number of degrees. Use clockwise=False to turn counter-clockwise")
@@ -109,10 +114,17 @@ class Mover:
                 raise ValueError("Can't run forever with block=True")
 
             inside_speed = (arc_radius - Mover._CHASSIS_RADIUS) / (arc_radius + Mover._CHASSIS_RADIUS) * speed
+
             if clockwise:
-                self._control.on(speed, inside_speed)
+                if backwards:
+                    self._control.on(-inside_speed, -speed)
+                else:
+                    self._control.on(speed, inside_speed)
             else:
-                self._control.on(inside_speed, speed)
+                if backwards:
+                    self._control.on(-speed, -inside_speed)
+                else:
+                    self._control.on(inside_speed, speed)
         else:
             degrees_in_rad = Mover._convert_deg_to_rad(degrees)
             inside_distance = (arc_radius - Mover._CHASSIS_RADIUS) * degrees_in_rad
@@ -123,9 +135,15 @@ class Mover:
             outside_degrees = Mover._convert_rad_to_deg(Mover._convert_distance_to_rad(outside_distance))
 
             if clockwise:
-                self._control.on_for_degrees(speed, inside_speed, outside_degrees, block=block)
+                if backwards:
+                    self._control.on_for_degrees(-inside_speed, -speed, outside_degrees, block=block)
+                else:
+                    self._control.on_for_degrees(speed, inside_speed, outside_degrees, block=block)
             else:
-                self._control.on_for_degrees(inside_speed, speed, outside_degrees, block=block)
+                if backwards:
+                    self._control.on_for_degrees(-speed, -inside_speed, outside_degrees, block=block)
+                else:
+                    self._control.on_for_degrees(inside_speed, speed, outside_degrees, block=block)
 
     def steer(self, steering, speed=_DEFAULT_SPEED):
         """Make the robot move in a direction. -100 is to the left. +100 is to the right. 0 is straight"""

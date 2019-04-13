@@ -7,13 +7,15 @@ import ev3dev2.sound
 class Robot:
     def __init__(self):
         self.mover = lib.motors.Mover()
-        self.left_color_sensor = lib.sensors.ColorSensor(lib.constants.LEFT_LINE_COLOR_SENSOR)
-        self.right_color_sensor = lib.sensors.ColorSensor(lib.constants.RIGHT_LINE_COLOR_SENSOR)
+        self.left_color_sensor = lib.sensors.ColorSensor(lib.constants.LEFT_COLOR_SENSOR)
+        self.right_color_sensor = lib.sensors.ColorSensor(lib.constants.RIGHT_COLOR_SENSOR)
         self.swivel = lib.motors.SwivelController()
         self.arm = lib.motors.ArmController()
 
     def tear_down(self):
         self.mover.stop()
+        self.swivel.point_left()
+        self.arm.lower_to_fibre_optic()
 
     @classmethod
     def beep(cls):

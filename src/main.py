@@ -12,17 +12,15 @@ class Main:
 
     def setup(self):
         self.robot = Robot()
-        self.line_follower = lib.line_follower.LineFollower(
-            self.robot.mover,
-            self.robot.left_color_sensor,
-            self.robot.right_color_sensor
-        )
+        self.line_follower = lib.line_follower.LineFollower(self.robot.mover)
 
     def run(self):
-        self.robot.mover.travel(100)
-        self.line_follower.follow_on_right(lib.line_follower.StopAtCrossLine(self.robot.left_color_sensor),
-                                           callback=self.read_info_blocks_callback, stop=False)
-        self.robot.mover.rotate(degrees=90, clockwise=False, arc_radius=40)
+        self.robot.arm.raise_arm()
+        self.robot.swivel.point_forward(block=False)
+        self.robot.mover.rotate(degrees=15, arc_radius=600, speed=25, clockwise=False)
+        self.line_follower.follow_on_left(lib.line_follower.StopAtCrossLine(self.robot.left_color_sensor),
+                                          callback=self.read_info_blocks_callback, stop=False)
+        self.robot.mover.rotate(degrees=90, clockwise=False, arc_radius=45, backwards=True)
         self.line_follower.follow_on_right(
             lib.line_follower.get_stop_after_x_intersections(5, self.robot.left_color_sensor))
 

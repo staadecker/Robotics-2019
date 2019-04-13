@@ -8,8 +8,7 @@ from tests import util
 class TestLineFollower(unittest.TestCase):
     def setUp(self) -> None:
         self.robot = main.Robot()
-        self.line_follower = line_follower.LineFollower(self.robot.mover, self.robot.left_color_sensor,
-                                                        self.robot.right_color_sensor)
+        self.line_follower = line_follower.LineFollower(self.robot.mover)
 
     def test_timed_follow(self):
         input("Press enter when the robot is on a black line")
@@ -49,8 +48,7 @@ class TestLineFollower(unittest.TestCase):
 class TestSimpleLineFollower(unittest.TestCase):
     def test_run_ten_seconds(self):
         self.robot = main.Robot()
-        self.line_follower = line_follower.LineFollower(self.robot.mover, self.robot.left_color_sensor,
-                                                        self.robot.right_color_sensor)
+        self.line_follower = line_follower.LineFollower(self.robot.mover)
         self.line_follower.follow_on_left(line_follower.StopAfterTime(10000))
 
 

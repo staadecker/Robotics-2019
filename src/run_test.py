@@ -1,4 +1,4 @@
-from tests import test_movement_controller, test_line_follower
+from tests import test_line_follower
 import unittest
 
 if __name__ == '__main__':

@@ -10,7 +10,8 @@ class ArmController:
     """Class to control arm of robot"""
 
     _ACCELERATION = 100  # Time in milliseconds the motor would take to reach 100% max speed from not moving
-    _DEFAULT_SPEED = 10
+    _DEFAULT_SPEED = 30
+    _DEFAULT_SPEED_WITH_OBJECT = 10
 
     # Degrees predictions for arm
     _DEG_TO_FIBRE_OPTIC = 115  # TODO Correct
@@ -24,8 +25,11 @@ class ArmController:
 
         self._arm_is_raised = False
 
-    def raise_arm(self, speed=_DEFAULT_SPEED):
+    def raise_arm(self, slow=False):
         """Resets arm to raised position"""
+
+        speed = self._DEFAULT_SPEED_WITH_OBJECT if slow else self._DEFAULT_SPEED
+
         if not self._arm_is_raised:
             self._arm.on(speed * -1)
             self._arm.wait_until_not_moving()
@@ -34,15 +38,20 @@ class ArmController:
 
             self._arm_is_raised = True
 
-    def lower_to_device(self, speed=_DEFAULT_SPEED, block=True):
+    def lower_to_device(self, slow=False, block=True):
         """Lowers arm the degrees to pick up device"""
+
+        speed = self._DEFAULT_SPEED_WITH_OBJECT if slow else self._DEFAULT_SPEED
+
         if self._arm_is_raised:
             self._arm.on_for_degrees(speed, self._DEG_TO_DEVICE, block=block)
 
             self._arm_is_raised = False
 
-    def lower_to_fibre_optic(self, speed=_DEFAULT_SPEED, block=True):
+    def lower_to_fibre_optic(self, slow=False, block=True):
         """Lowers arm the degrees to pick up fibre optic cable"""
+
+        speed = self._DEFAULT_SPEED_WITH_OBJECT if slow else self._DEFAULT_SPEED
 
         if self._arm_is_raised:
             self._arm.on_for_degrees(speed, self._DEG_TO_FIBRE_OPTIC, block=block)

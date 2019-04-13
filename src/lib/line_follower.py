@@ -108,14 +108,15 @@ class StopAfterTime(StopIndicator):
         return datetime.datetime.now().timestamp() * 1000
 
 
-class StopAtCrossLine(StopIndicator):
-    def __init__(self, color_sensor: ColorSensor):
+class StopAtColor(StopIndicator):
+    def __init__(self, color_sensor: ColorSensor, colours):
         self.color_sensor = color_sensor
+        self._colours = colours
 
     def should_end(self) -> bool:
         color_reading = self.color_sensor.get_color()
         print(color_reading)
-        should_end = color_reading == ColorSensor.BLACK or color_reading == ColorSensor.BROWN
+        should_end = color_reading in self._colours
         if should_end:
             lib.robot.Robot.beep()
 
@@ -123,6 +124,12 @@ class StopAtCrossLine(StopIndicator):
 
     def reset(self) -> None:
         pass
+
+
+class StopAtCrossLine(StopAtColor):
+    def __init__(self, color_sensor: ColorSensor):
+        super().__init__(color_sensor, (ColorSensor.BLACK, ColorSensor.BROWN))
+        self.color_sensor = color_sensor
 
 
 class StopAfterXTimes(StopIndicator):

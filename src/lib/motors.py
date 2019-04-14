@@ -92,18 +92,27 @@ class Mover:
     """Class to move the robot"""
 
     _WHEEL_RADIUS = 40.8
-    _CHASSIS_RADIUS = 57.5
+    CHASSIS_RADIUS = 57.5
 
-    _DEFAULT_SPEED = 50
+    _DEFAULT_SPEED = 15
     _DEFAULT_ROTATE_SPEED = 15
 
-    def __init__(self):
+    def __init__(self, reverse_motors=False):
         self._control = ev3dev2.motor.MoveTank(constants.LEFT_MOTOR_PORT, constants.RIGHT_MOTOR_PORT)
 
-    def travel(self, distance, speed=_DEFAULT_SPEED, block=True):
+        for motor in self._control.motors.values():
+            if reverse_motors:
+                motor.polarity = ev3dev2.motor.Motor.POLARITY_INVERSED
+            else:
+                motor.polarity = ev3dev2.motor.Motor.POLARITY_NORMAL
+
+    def travel(self, distance, speed=_DEFAULT_SPEED, block=True, backwards=False):
         """Make the robot move forward or backward a certain number of mm"""
         degrees_for_wheel = Mover._convert_rad_to_deg(Mover._convert_distance_to_rad(distance))
-        self._control.on_for_degrees(speed, speed, degrees_for_wheel, block=block)
+        if backwards:
+            self._control.on_for_degrees(-speed, -speed, degrees_for_wheel, block=block)
+        else:
+            self._control.on_for_degrees(speed, speed, degrees_for_wheel, block=block)
 
     def rotate(self, degrees=None, arc_radius=0, clockwise=True, speed=_DEFAULT_ROTATE_SPEED, block=True,
                backwards=False) -> None:
@@ -122,7 +131,7 @@ class Mover:
             if block:
                 raise ValueError("Can't run forever with block=True")
 
-            inside_speed = (arc_radius - Mover._CHASSIS_RADIUS) / (arc_radius + Mover._CHASSIS_RADIUS) * speed
+            inside_speed = (arc_radius - Mover.CHASSIS_RADIUS) / (arc_radius + Mover.CHASSIS_RADIUS) * speed
 
             if clockwise:
                 if backwards:
@@ -136,8 +145,8 @@ class Mover:
                     self._control.on(inside_speed, speed)
         else:
             degrees_in_rad = Mover._convert_deg_to_rad(degrees)
-            inside_distance = (arc_radius - Mover._CHASSIS_RADIUS) * degrees_in_rad
-            outside_distance = (arc_radius + Mover._CHASSIS_RADIUS) * degrees_in_rad
+            inside_distance = (arc_radius - Mover.CHASSIS_RADIUS) * degrees_in_rad
+            outside_distance = (arc_radius + Mover.CHASSIS_RADIUS) * degrees_in_rad
 
             time = outside_distance / speed
             inside_speed = inside_distance / time

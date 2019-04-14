@@ -1,11 +1,13 @@
 from lib.motors import Mover
 from lib.sensors import ColorSensor
-from typing import List
+from typing import List, Tuple
 import lib.constants
 
 import datetime
 import abc
 import lib.robot
+
+
 
 
 class StopIndicator(abc.ABC):
@@ -26,17 +28,21 @@ class LineFollower:
     _BLACK_REFLECTION = 10
     _FRACTION_OF_DELTA = 0.5
 
-    _SPEED = 40
+    _DEFAULT_KP = 0.25
+    _DEFAULT_KD = 1.25
+    _DEFAULT_KI = 0.000
+    _DEFAULT_SPEED = 40
 
     _MIDDLE_REFLECTION_VALUE = (_WHITE_REFLECTION - _BLACK_REFLECTION) * _FRACTION_OF_DELTA + _BLACK_REFLECTION
 
-    _P_COEF = 0.25
-    _D_COEF = 1.25
-    _I_COEF = 0
-
-    def __init__(self, movement_controller: Mover):
-        self.movement_controller = movement_controller
-        self.color_sensor = ColorSensor(lib.constants.LINE_FOLLOWER_COLOR_SENSOR)
+    def __init__(self, mover: Mover, port=lib.constants.LINE_FOLLOWER_COLOR_SENSOR, kp=_DEFAULT_KP, kd=_DEFAULT_KD,
+                 ki=_DEFAULT_KI, speed=_DEFAULT_SPEED):
+        self.movement_controller = mover
+        self.color_sensor = ColorSensor(port)
+        self._kp = kp
+        self._kd = kd
+        self._ki = ki
+        self._speed = speed
 
     def follow_on_left(self, stop_indicator: StopIndicator, stop=True, callback=None):
         self._follow_line(stop_indicator, self.color_sensor, True, stop=stop, callback=callback)
@@ -56,15 +62,23 @@ class LineFollower:
 
         last_error = 0
         total_error = 0
-        flip_multiplication = -1 if inverse_correction else 1
+        error_was_positive = True
 
         while not stop_indicator.should_end():
             error = self._MIDDLE_REFLECTION_VALUE - color_sensor.get_reflected()
 
+            error_is_positive = (True if error > 0 else False)
+            if error_was_positive != error_is_positive:
+                total_error = 0
+                error_was_positive = error_is_positive
+
             total_error += error
 
-            direction = (LineFollower._P_COEF * error + LineFollower._D_COEF * (
-                    error - last_error) + LineFollower._I_COEF * total_error) * flip_multiplication
+            direction = self._kp * error + self._kd * (
+                    error - last_error) + self._ki * total_error
+
+            if inverse_correction:
+                direction *= -1
 
             # print(direction)
 
@@ -75,7 +89,7 @@ class LineFollower:
                 direction = -100
                 print("Warning: Steering at -100")
 
-            self.movement_controller.steer(direction, speed=self._SPEED)
+            self.movement_controller.steer(direction, speed=self._speed)
 
             last_error = error
 
@@ -115,7 +129,7 @@ class StopAtColor(StopIndicator):
 
     def should_end(self) -> bool:
         color_reading = self.color_sensor.get_color()
-        print(color_reading)
+
         should_end = color_reading in self._colours
         if should_end:
             lib.robot.Robot.beep()

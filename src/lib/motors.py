@@ -14,7 +14,7 @@ class ArmController:
     _DEFAULT_SPEED_WITH_OBJECT = 10
 
     # Degrees predictions for arm
-    _DEG_TO_FIBRE_OPTIC = 115  # TODO Correct
+    _DEG_TO_FIBRE_OPTIC = 105  # TODO Correct
     _DEG_TO_DEVICE = 70
 
     def __init__(self):

@@ -16,7 +16,7 @@ class Actions:
                                            callback=color_blocks_callback)
 
         # Turn
-        self._turn_left()
+        self._robot.mover.rotate(degrees=85, arc_radius=10, clockwise=False)
 
         # Go to end
         self._line_follower.follow_on_right(
@@ -25,35 +25,28 @@ class Actions:
     def pickup_fibre_on_left(self):
         self._robot.arm.lower_to_fibre_optic()
         self._robot.mover.rotate(degrees=45, clockwise=False)
-        self._robot.mover.travel(80)
+        self._robot.mover.travel(90)
         self._robot.mover.rotate(degrees=45)
         self._robot.mover.travel(120)
         self._robot.arm.raise_arm(slow=True)
         self._robot.mover.rotate(degrees=175)
-        self._robot.mover.travel(180)
-        self._robot.mover.rotate(degrees=25, arc_radius=60)
+        self._robot.mover.travel(220)
+        self._robot.mover.rotate(degrees=20, arc_radius=60)
 
     def go_to_drop_off_fibre(self):
         self._line_follower.follow_on_left(lib.line_follower.StopAtCrossLine(self._robot.right_color_sensor))
-        self._turn_right()
+        self._robot.mover.rotate(degrees=90, arc_radius=30)
         self._line_follower.follow_on_left(
             lib.line_follower.get_stop_after_x_intersections(1, self._robot.left_color_sensor))
-        self._turn_left()
+        self._robot.mover.rotate(degrees=90, arc_radius=30, clockwise=False)
         self._line_follower.follow_on_right(
             lib.line_follower.StopAtColor(self._robot.left_color_sensor, (ColorSensor.RED,)))
 
     def drop_off_fibre(self):
-        # self._robot.mover.rotate(arc_radius=self._robot.mover.CHASSIS_RADIUS, backwards=True, speed=5)
-        #
-        # while self._robot
-
+        self._robot.mover.travel(10)
         self._robot.arm.lower_to_fibre_optic(slow=True)
         self._robot.mover.travel(150, backwards=True)
         self._robot.arm.raise_arm()
         self._robot.mover.rotate(degrees=180)
 
-    def _turn_left(self):
-        self._robot.mover.rotate(degrees=85, arc_radius=30, clockwise=False)
 
-    def _turn_right(self):
-        self._robot.mover.rotate(degrees=85)

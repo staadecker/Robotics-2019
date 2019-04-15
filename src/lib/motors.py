@@ -6,6 +6,8 @@ import lib.constants
 from lib import constants
 
 
+
+
 class ArmController:
     """Class to control arm of robot"""
 
@@ -64,12 +66,13 @@ class SwivelController:
 
     _ACCELERATION = 100  # Time in milliseconds the motor would take to reach 100% max speed from not moving
     _DEFAULT_SPEED = 40  # In percent
+    _START_POSITION = 180
 
     def __init__(self):
         self._swivel = ev3dev2.motor.MediumMotor(lib.constants.SWIVEL_MOTOR_PORT)
         self._swivel.ramp_up_sp = self._ACCELERATION
         self._swivel.ramp_down_sp = self._ACCELERATION
-        self._swivel.position = self._convert_deg_to_pos(90)
+        self._swivel.position = self._convert_deg_to_pos(self._START_POSITION)
         self._swivel.stop_action = ev3dev2.motor.Motor.STOP_ACTION_HOLD
 
     def point_forward(self, speed=_DEFAULT_SPEED, block=True):
@@ -83,6 +86,9 @@ class SwivelController:
 
     def point_backwards(self, speed=_DEFAULT_SPEED, block=True):
         self._swivel.on_to_position(speed, self._convert_deg_to_pos(180), block=block)
+
+    def reset(self):
+        self._swivel.on_to_position(self._DEFAULT_SPEED, self._convert_deg_to_pos(self._START_POSITION))
 
     def _convert_deg_to_pos(self, degrees):
         return degrees * self._swivel.count_per_rot / 360

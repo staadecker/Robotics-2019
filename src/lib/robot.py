@@ -13,7 +13,7 @@ class Robot:
 
     def tear_down(self):
         self.mover.stop()
-        self.swivel.point_left()
+        self.swivel.point_backwards()
         self.arm.lower_to_fibre_optic()
 
     @classmethod

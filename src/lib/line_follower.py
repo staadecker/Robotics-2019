@@ -1,13 +1,11 @@
 from lib.motors import Mover
 from lib.sensors import ColorSensor
-from typing import List, Tuple
+from typing import List
 import lib.constants
 
 import datetime
 import abc
 import lib.robot
-
-
 
 
 class StopIndicator(abc.ABC):
@@ -31,31 +29,31 @@ class LineFollower:
     _DEFAULT_KP = 0.25
     _DEFAULT_KD = 1.25
     _DEFAULT_KI = 0.000
-    _DEFAULT_SPEED = 40
+    _DEFAULT_SPEED = 35
+    _DEFAULT_SLOW_SPEED = 20
+
+    _DEFAULT_SLOW_KP = 0.4
+    _DEFAULT_SLOW_KD = 1.25
+    _DEFAULT_SLOW_KI = 0.000
 
     _MIDDLE_REFLECTION_VALUE = (_WHITE_REFLECTION - _BLACK_REFLECTION) * _FRACTION_OF_DELTA + _BLACK_REFLECTION
 
-    def __init__(self, mover: Mover, port=lib.constants.LINE_FOLLOWER_COLOR_SENSOR, kp=_DEFAULT_KP, kd=_DEFAULT_KD,
-                 ki=_DEFAULT_KI, speed=_DEFAULT_SPEED):
+    def __init__(self, mover: Mover, port=lib.constants.LINE_FOLLOWER_COLOR_SENSOR):
         self.movement_controller = mover
         self.color_sensor = ColorSensor(port)
-        self._kp = kp
-        self._kd = kd
-        self._ki = ki
-        self._speed = speed
 
-    def follow_on_left(self, stop_indicator: StopIndicator, stop=True, callback=None):
-        self._follow_line(stop_indicator, self.color_sensor, True, stop=stop, callback=callback)
+    def follow_on_left(self, stop_indicator: StopIndicator, **kwargs):
+        self._follow_line(stop_indicator, True, **kwargs)
 
-    def follow_on_right(self, stop_indicator: StopIndicator, stop=True, callback=None):
-        self._follow_line(stop_indicator, self.color_sensor, False, stop=stop, callback=callback)
+    def follow_on_right(self, stop_indicator: StopIndicator, **kwargs):
+        self._follow_line(stop_indicator, False, **kwargs)
 
-    def _follow_line(self, stop_indicator, color_sensor, inverse_correction, stop=True, callback=None):
+    def _follow_line(self, stop_indicator, inverse_correction, stop=True, callback=None, slow=False,
+                     kp=None, kd=None, ki=None):
         """
         Method used to follow the line.
 
         :param stop_indicator : Object that can be used to know when to stop following the line
-        :param color_sensor : The color sensor to use for following
         :param stop : Determines if the line follower should stop following when finished or just pass over the control
         :param callback : method to be called repeatedly when following the line
         """
@@ -64,8 +62,19 @@ class LineFollower:
         total_error = 0
         error_was_positive = True
 
+        speed = LineFollower._DEFAULT_SLOW_SPEED if slow else LineFollower._DEFAULT_SPEED
+
+        if kp is None:
+            kp = LineFollower._DEFAULT_SLOW_KP if slow else LineFollower._DEFAULT_KP
+
+        if kd is None:
+            kd = LineFollower._DEFAULT_SLOW_KD if slow else LineFollower._DEFAULT_KD
+
+        if ki is None:
+            ki = LineFollower._DEFAULT_SLOW_KI if slow else LineFollower._DEFAULT_KI
+
         while not stop_indicator.should_end():
-            error = self._MIDDLE_REFLECTION_VALUE - color_sensor.get_reflected()
+            error = self._MIDDLE_REFLECTION_VALUE - self.color_sensor.get_reflected()
 
             error_is_positive = (True if error > 0 else False)
             if error_was_positive != error_is_positive:
@@ -74,8 +83,8 @@ class LineFollower:
 
             total_error += error
 
-            direction = self._kp * error + self._kd * (
-                    error - last_error) + self._ki * total_error
+            direction = kp * error + kd * (
+                    error - last_error) + ki * total_error
 
             if inverse_correction:
                 direction *= -1
@@ -89,7 +98,7 @@ class LineFollower:
                 direction = -100
                 print("Warning: Steering at -100")
 
-            self.movement_controller.steer(direction, speed=self._speed)
+            self.movement_controller.steer(direction, speed=speed)
 
             last_error = error
 
@@ -123,21 +132,26 @@ class StopAfterTime(StopIndicator):
 
 
 class StopAtColor(StopIndicator):
+
     def __init__(self, color_sensor: ColorSensor, colours):
         self.color_sensor = color_sensor
         self._colours = colours
+        self._times_where_got_correct_color = 0
 
     def should_end(self) -> bool:
         color_reading = self.color_sensor.get_color()
 
-        should_end = color_reading in self._colours
-        if should_end:
-            lib.robot.Robot.beep()
+        if color_reading in self._colours:
+            self._times_where_got_correct_color += 1
 
-        return should_end
+        if self._times_where_got_correct_color > 0:
+            lib.robot.Robot.beep()
+            return True
+
+        return False
 
     def reset(self) -> None:
-        pass
+        self._times_where_got_correct_color = 0
 
 
 class StopAtCrossLine(StopAtColor):
@@ -197,11 +211,20 @@ class StopNever(StopIndicator):
         pass
 
 
-def get_stop_after_x_intersections(number_of_intersections_to_pass, color_sensor_to_use):
-    return StopAfterMultiple([
-        StopAfterXTimes(number_of_intersections_to_pass + 1,
-                        StopAfterMultiple([
-                            StopAfterTime(300),
-                            StopAtCrossLine(color_sensor_to_use)])
-                        )
-    ])
+def get_stop_after_x_intersections(number_of_intersections_to_pass, color_sensor_to_use, include_initial_delay=True):
+    if include_initial_delay:
+        return StopAfterXTimes(number_of_intersections_to_pass + 1,
+                               StopAfterMultiple([
+                                   StopAfterTime(300),
+                                   StopAtCrossLine(color_sensor_to_use)])
+                               )
+
+    else:
+        return StopAfterMultiple([
+            StopAfterXTimes(number_of_intersections_to_pass,
+                            StopAfterMultiple([
+                                StopAtCrossLine(color_sensor_to_use),
+                                StopAfterTime(300)
+                            ])),
+            StopAtCrossLine(color_sensor_to_use)
+        ])

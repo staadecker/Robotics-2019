@@ -45,7 +45,7 @@ if __name__ == '__main__':
     try:
         main = Main()
         if not DEBUGGING:
-            main.robot.beep()
+            main.robot.beep(allow_hidding=False)
             while True:
                 if Button().enter:
                     break

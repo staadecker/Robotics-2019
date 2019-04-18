@@ -17,7 +17,7 @@ class Actions:
                                            callback=color_blocks_callback)
 
         # Turn
-        self._robot.mover.rotate(degrees=85, arc_radius=10, clockwise=False)
+        self._robot.mover.rotate(degrees=85, arc_radius=20, clockwise=False)
 
         # Go to end
         self._line_follower.follow_on_right(
@@ -44,10 +44,11 @@ class Actions:
             lib.line_follower.StopAtColor(self._robot.left_color_sensor, (ColorSensor.RED,)), slow=True)
 
     def drop_off_fibre_first(self):
-        self._robot.mover.travel(30)
+        self._robot.mover.travel(35)
         self._robot.mover.rotate(degrees=4, clockwise=False)
         time.sleep(0.5)
         self._robot.arm.lower_to_fibre_optic(slow=True)
+        self._robot.arm.wiggle_fibre_optic()
         self._robot.mover.travel(170, backwards=True)
         self._robot.arm.raise_arm()
         self._robot.mover.rotate(degrees=180)
@@ -84,15 +85,16 @@ class Actions:
         self._robot.mover.rotate(degrees=90, arc_radius=30, clockwise=False)
         self._line_follower.follow_on_right(
             lib.line_follower.get_stop_after_x_intersections(1, self._robot.left_color_sensor), slow=True)
-        self._robot.mover.rotate(degrees=90, arc_radius=30, clockwise=False)
+        self._robot.mover.rotate(degrees=90, arc_radius=40, clockwise=False)
         self._line_follower.follow_on_right(
             lib.line_follower.StopAtColor(self._robot.right_color_sensor, (ColorSensor.GREEN,)), slow=True)
 
     def drop_off_fibre_second(self):
-        self._robot.mover.travel(30)
+        self._robot.mover.travel(35)
         self._robot.mover.rotate(degrees=4, clockwise=False)
         time.sleep(0.5)
         self._robot.arm.lower_to_fibre_optic(slow=True)
+        self._robot.arm.wiggle_fibre_optic()
         self._robot.mover.travel(170, backwards=True)
         self._robot.arm.raise_arm()
         self._robot.mover.rotate(degrees=180)

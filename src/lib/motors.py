@@ -14,7 +14,7 @@ class ArmController:
     _DEFAULT_SPEED_WITH_OBJECT = 7
 
     # Degrees predictions for arm
-    _DEG_TO_FIBRE_OPTIC = 88  # TODO Correct
+    _DEG_TO_FIBRE_OPTIC = 90  # TODO Correct
     _DEG_TO_DEVICE = 45
 
     _RAISED = 0
@@ -68,6 +68,11 @@ class ArmController:
             self._arm.on_for_degrees(speed, self._DEG_TO_FIBRE_OPTIC, block=block)
 
             self._position = self._AT_FIBRE_OPTIC
+
+    def wiggle_fibre_optic(self):
+        for i in range(5):
+            self._arm.on_for_degrees(-30, 30)
+            self._arm.on_for_degrees(30, 30)
 
 
 class SwivelController:

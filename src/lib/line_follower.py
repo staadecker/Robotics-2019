@@ -105,6 +105,8 @@ class LineFollower:
             if callback is not None:
                 callback()
 
+        #self.movement_controller.travel(10)
+
         if stop:
             self.movement_controller.stop()
 

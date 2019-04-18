@@ -6,8 +6,6 @@ import lib.constants
 from lib import constants
 
 
-
-
 class ArmController:
     """Class to control arm of robot"""
 

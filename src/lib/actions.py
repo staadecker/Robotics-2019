@@ -42,7 +42,15 @@ class Actions:
         self._line_follower.follow_on_right(
             lib.line_follower.StopAtColor(self._robot.left_color_sensor, (ColorSensor.RED,)), slow=True)
 
-    def drop_off_fibre(self):
+    def drop_off_fibre_first(self):
+        self._robot.mover.travel(20)
+        self._robot.mover.rotate(degrees=5, clockwise=False)
+        self._robot.arm.lower_to_fibre_optic(slow=True)
+        self._robot.mover.travel(170, backwards=True)
+        self._robot.arm.raise_arm()
+        self._robot.mover.rotate(degrees=180)
+
+    def drop_off_fibre_second(self):
         self._robot.mover.travel(10)
         self._robot.mover.rotate(degrees=5, clockwise=False)
         self._robot.arm.lower_to_fibre_optic(slow=True)
@@ -84,3 +92,9 @@ class Actions:
         self._robot.mover.rotate(degrees=90, arc_radius=30, clockwise=False)
         self._line_follower.follow_on_right(
             lib.line_follower.StopAtColor(self._robot.right_color_sensor, (ColorSensor.GREEN,)), slow=True)
+
+    def return_to_start(self):
+        self._robot.mover.rotate(degrees=90, arc_radius=90)
+        self._line_follower.follow_on_left(lib.line_follower.get_stop_after_x_intersections(1, self._robot.right_color_sensor, False))
+        self._robot.mover.rotate(degrees=95, arc_radius=50)
+        self._robot.mover.travel(400, backwards=True)

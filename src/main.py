@@ -20,11 +20,12 @@ class Main:
         self.actions.pickup_fibre_on_left()
 
         self.actions.go_to_drop_off_fibre()
-        self.actions.drop_off_fibre()
+        self.actions.drop_off_fibre_first()
         self.actions.go_to_second_fibre()
         self.actions.pickup_second_fibre()
         self.actions.go_to_drop_second_fibre()
-        self.actions.drop_off_fibre()
+        self.actions.drop_off_fibre_second()
+        self.actions.return_to_start()
 
     def prepare(self):
         self.robot.arm.raise_arm()

@@ -4,6 +4,7 @@ import lib.line_follower
 from ev3dev2.button import Button
 from lib.robot import Robot
 import lib.actions
+import time
 
 DEBUGGING = False
 
@@ -31,6 +32,7 @@ class Main:
 
     def prepare(self):
         self.robot.arm.raise_arm(calibrate=True)
+        time.sleep(0.5)
         self.robot.swivel.point_forward(block=False)
 
     def read_info_blocks_callback(self):

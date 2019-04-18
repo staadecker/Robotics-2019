@@ -38,7 +38,7 @@ class ArmController:
             self._arm.on(-speed)
             self._arm.wait_until_not_moving()
 
-            self._arm.on_for_degrees(speed, 30)
+            self._arm.on_for_degrees(speed, 30, block=True)
 
             self._position = self._RAISED
         else:
@@ -109,8 +109,8 @@ class Mover:
     _WHEEL_RADIUS = 40.8
     CHASSIS_RADIUS = 57.5
 
-    _DEFAULT_SPEED = 15
-    _DEFAULT_ROTATE_SPEED = 15
+    _DEFAULT_SPEED = 20
+    _DEFAULT_ROTATE_SPEED = 10
 
     def __init__(self, reverse_motors=False):
         self._control = ev3dev2.motor.MoveTank(constants.LEFT_MOTOR_PORT, constants.RIGHT_MOTOR_PORT)

@@ -9,13 +9,17 @@ from lib import constants
 class ArmController:
     """Class to control arm of robot"""
 
-    _ACCELERATION = 100  # Time in milliseconds the motor would take to reach 100% max speed from not moving
+    _ACCELERATION = 2000  # Time in milliseconds the motor would take to reach 100% max speed from not moving
     _DEFAULT_SPEED = 30
-    _DEFAULT_SPEED_WITH_OBJECT = 10
+    _DEFAULT_SPEED_WITH_OBJECT = 7
 
     # Degrees predictions for arm
-    _DEG_TO_FIBRE_OPTIC = 105  # TODO Correct
-    _DEG_TO_DEVICE = 70
+    _DEG_TO_FIBRE_OPTIC = 86  # TODO Correct
+    _DEG_TO_DEVICE = 45
+
+    _RAISED = 0
+    _AT_FIBRE_OPTIC = 1
+    _AT_DEVICE = 2
 
     def __init__(self):
         self._arm = ev3dev2.motor.LargeMotor(lib.constants.ARM_MOTOR_PORT)
@@ -23,40 +27,47 @@ class ArmController:
         self._arm.ramp_up_sp = self._ACCELERATION
         self._arm.ramp_down_sp = self._ACCELERATION
 
-        self._arm_is_raised = False
+        self._position = self._AT_FIBRE_OPTIC
 
-    def raise_arm(self, slow=False):
+    def raise_arm(self, slow=False, calibrate=False, block=True):
         """Resets arm to raised position"""
 
         speed = self._DEFAULT_SPEED_WITH_OBJECT if slow else self._DEFAULT_SPEED
 
-        if not self._arm_is_raised:
-            self._arm.on(speed * -1)
+        if calibrate:
+            self._arm.on(-speed)
             self._arm.wait_until_not_moving()
 
-            self._arm.on_for_degrees(speed, 20)
+            self._arm.on_for_degrees(speed, 30)
 
-            self._arm_is_raised = True
+            self._position = self._RAISED
+        else:
+            if self._position == self._AT_FIBRE_OPTIC:
+                self._arm.on_for_degrees(-speed, self._DEG_TO_FIBRE_OPTIC, block=block)
+                self._position = self._RAISED
+            elif self._position == self._AT_DEVICE:
+                self._arm.on_for_degrees(-speed, self._DEG_TO_DEVICE, block=block)
+                self._position = self._RAISED
 
     def lower_to_device(self, slow=False, block=True):
         """Lowers arm the degrees to pick up device"""
 
         speed = self._DEFAULT_SPEED_WITH_OBJECT if slow else self._DEFAULT_SPEED
 
-        if self._arm_is_raised:
+        if self._position == self._RAISED:
             self._arm.on_for_degrees(speed, self._DEG_TO_DEVICE, block=block)
 
-            self._arm_is_raised = False
+            self._position = self._AT_DEVICE
 
     def lower_to_fibre_optic(self, slow=False, block=True):
         """Lowers arm the degrees to pick up fibre optic cable"""
 
         speed = self._DEFAULT_SPEED_WITH_OBJECT if slow else self._DEFAULT_SPEED
 
-        if self._arm_is_raised:
+        if self._position == self._RAISED:
             self._arm.on_for_degrees(speed, self._DEG_TO_FIBRE_OPTIC, block=block)
 
-            self._arm_is_raised = False
+            self._position = self._AT_FIBRE_OPTIC
 
 
 class SwivelController:

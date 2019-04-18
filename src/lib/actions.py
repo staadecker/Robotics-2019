@@ -1,5 +1,6 @@
 import lib.line_follower
 import lib.robot
+import time
 from lib.sensors import ColorSensor
 
 
@@ -44,15 +45,17 @@ class Actions:
 
     def drop_off_fibre_first(self):
         self._robot.mover.travel(20)
-        self._robot.mover.rotate(degrees=5, clockwise=False)
+        self._robot.mover.rotate(degrees=7, clockwise=False)
+        time.sleep(0.5)
         self._robot.arm.lower_to_fibre_optic(slow=True)
         self._robot.mover.travel(170, backwards=True)
         self._robot.arm.raise_arm()
         self._robot.mover.rotate(degrees=180)
 
     def drop_off_fibre_second(self):
-        self._robot.mover.travel(10)
+        self._robot.mover.travel(20)
         self._robot.mover.rotate(degrees=5, clockwise=False)
+        time.sleep(0.5)
         self._robot.arm.lower_to_fibre_optic(slow=True)
         self._robot.mover.travel(170, backwards=True)
         self._robot.arm.raise_arm()
@@ -80,6 +83,7 @@ class Actions:
         self._robot.arm.raise_arm(slow=True)
         self._robot.mover.rotate(degrees=160, clockwise=False)
         self._robot.mover.travel(170)
+        time.sleep(0.5)
         self._robot.mover.rotate(degrees=20, arc_radius=60, clockwise=False)
 
     def go_to_drop_second_fibre(self):

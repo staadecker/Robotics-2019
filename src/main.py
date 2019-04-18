@@ -1,9 +1,11 @@
+#!/usr/bin/env python3
+
 import lib.line_follower
 from ev3dev2.button import Button
 from lib.robot import Robot
 import lib.actions
 
-DEBUGGING = True
+DEBUGGING = False
 
 
 class Main:
@@ -28,7 +30,7 @@ class Main:
         self.actions.return_to_start()
 
     def prepare(self):
-        self.robot.arm.raise_arm()
+        self.robot.arm.raise_arm(calibrate=True)
         self.robot.swivel.point_forward(block=False)
 
     def read_info_blocks_callback(self):
@@ -42,7 +44,9 @@ if __name__ == '__main__':
         main = Main()
         if not DEBUGGING:
             main.robot.beep()
-            Button.wait_for_released('enter')
+            while True:
+                if Button().enter:
+                    break
         main.run()
     finally:
         if main is not None:

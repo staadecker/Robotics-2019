@@ -16,10 +16,12 @@ class ArmController:
     # Degrees predictions for arm
     _DEG_TO_FIBRE_OPTIC = 90  # TODO Correct
     _DEG_TO_DEVICE = 45
+    _DEG_TO_BONUS = 60
 
     _RAISED = 0
     _AT_FIBRE_OPTIC = 1
     _AT_DEVICE = 2
+    _AT_BONUS = 3
 
     def __init__(self):
         self._arm = ev3dev2.motor.LargeMotor(lib.constants.ARM_MOTOR_PORT)
@@ -48,6 +50,9 @@ class ArmController:
             elif self._position == self._AT_DEVICE:
                 self._arm.on_for_degrees(-speed, self._DEG_TO_DEVICE, block=block)
                 self._position = self._RAISED
+            elif self._position == self._AT_BONUS:
+                self._arm.on_for_degrees(-speed, degrees=self._DEG_TO_BONUS)
+                self._position = self._RAISED
 
     def lower_to_device(self, slow=False, block=True):
         """Lowers arm the degrees to pick up device"""
@@ -69,8 +74,16 @@ class ArmController:
 
             self._position = self._AT_FIBRE_OPTIC
 
+    def lower_to_bonus(self, block=True):
+        """Lowers arm the degrees to pick up fibre optic cable"""
+
+        if self._position == self._RAISED:
+            self._arm.on_for_degrees(self._DEFAULT_SPEED, self._DEG_TO_BONUS, block=block)
+
+            self._position = self._AT_BONUS
+
     def wiggle_fibre_optic(self):
-        for i in range(5):
+        for i in range(2):
             self._arm.on_for_degrees(-30, 30)
             self._arm.on_for_degrees(30, 30)
 
@@ -103,6 +116,11 @@ class SwivelController:
 
     def reset(self):
         self._swivel.on_to_position(self._DEFAULT_SPEED, self._convert_deg_to_pos(self._START_POSITION))
+
+    def shake(self):
+        self._swivel.on_for_degrees(10, -30)
+        self._swivel.on_for_degrees(10, 60)
+        self._swivel.on_for_degrees(10, -30)
 
     def _convert_deg_to_pos(self, degrees):
         return degrees * self._swivel.count_per_rot / 360

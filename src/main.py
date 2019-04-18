@@ -18,7 +18,9 @@ class Main:
     def run(self):
         self.prepare()
 
-        self.actions.go_to_first_fibre_from_start(color_blocks_callback=self.read_info_blocks_callback)
+        self.actions.go_to_first_fibre_from_start_part_1(color_blocks_callback=self.read_info_blocks_callback)
+        self.actions.get_bonus()
+        self.actions.go_to_first_fibre_from_start_part_2()
 
         self.actions.pickup_fibre_on_left()
 
@@ -45,7 +47,8 @@ if __name__ == '__main__':
     try:
         main = Main()
         if not DEBUGGING:
-            main.robot.beep(allow_hidding=False)
+            print("READY")
+            main.robot.beep()
             while True:
                 if Button().enter:
                     break

@@ -9,7 +9,7 @@ class Actions:
         self._line_follower = line_follower
         self._robot = robot
 
-    def go_to_first_fibre_from_start(self, color_blocks_callback=None):
+    def go_to_first_fibre_from_start_part_1(self, color_blocks_callback=None):
         # Go to corner
         self._robot.mover.rotate(degrees=15, arc_radius=600, speed=25, clockwise=False)
         self._robot.mover.rotate(degrees=10)
@@ -19,9 +19,25 @@ class Actions:
         # Turn
         self._robot.mover.rotate(degrees=85, arc_radius=20, clockwise=False)
 
+        self._line_follower.follow_on_right(
+            lib.line_follower.get_stop_after_x_intersections(2, self._robot.left_color_sensor))
+
+    def get_bonus(self):
+        self._robot.mover.rotate(degrees=90, clockwise=False, arc_radius=20)
+        self._robot.arm.lower_to_bonus(block=False)
+        self._line_follower.follow_on_right(
+            lib.line_follower.StopAtColor(self._robot.right_color_sensor, (ColorSensor.RED,)), slow=True)
+        self._robot.mover.travel(90)
+        self._robot.swivel.point_backwards(speed=5)
+        self._robot.swivel.point_forward(block=False)
+        self._robot.arm.raise_arm(block=False)
+        # self._robot.mover.travel(300, backwards=True)
+        self._robot.mover.rotate(degrees=90, arc_radius=250, backwards=True)
+
+    def go_to_first_fibre_from_start_part_2(self):
         # Go to end
         self._line_follower.follow_on_right(
-            lib.line_follower.get_stop_after_x_intersections(5, self._robot.left_color_sensor))
+            lib.line_follower.get_stop_after_x_intersections(3, self._robot.left_color_sensor))
 
     def pickup_fibre_on_left(self):
         self._robot.arm.lower_to_fibre_optic()
@@ -75,12 +91,12 @@ class Actions:
         self._robot.arm.raise_arm(slow=True)
         self._robot.mover.rotate(degrees=160, clockwise=False)
         self._robot.mover.travel(170)
-        time.sleep(0.5)
+        time.sleep(1)
         self._robot.mover.rotate(degrees=20, arc_radius=60, clockwise=False)
 
     def go_to_drop_second_fibre(self):
         self._line_follower.follow_on_right(
-            lib.line_follower.get_stop_after_x_intersections(4, self._robot.left_color_sensor), slow=True
+            lib.line_follower.get_stop_after_x_intersections(4, self._robot.left_color_sensor), slow=False
         )
         self._robot.mover.rotate(degrees=90, arc_radius=30, clockwise=False)
         self._line_follower.follow_on_right(
@@ -101,6 +117,7 @@ class Actions:
 
     def return_to_start(self):
         self._robot.mover.rotate(degrees=90, arc_radius=110)
-        self._line_follower.follow_on_left(lib.line_follower.get_stop_after_x_intersections(1, self._robot.right_color_sensor, False), slow=True)
+        self._line_follower.follow_on_left(
+            lib.line_follower.get_stop_after_x_intersections(1, self._robot.right_color_sensor, False), slow=True)
         self._robot.mover.rotate(degrees=100, arc_radius=50)
         self._robot.mover.travel(400, backwards=True)

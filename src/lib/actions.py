@@ -27,12 +27,12 @@ class Actions:
         self._robot.arm.lower_to_bonus(block=False)
         self._line_follower.follow_on_right(
             lib.line_follower.StopAtColor(self._robot.right_color_sensor, (ColorSensor.RED,)), slow=True)
-        self._robot.mover.travel(90)
+        self._robot.mover.travel(105)
         self._robot.swivel.point_backwards(speed=5)
         self._robot.swivel.point_forward(block=False)
         self._robot.arm.raise_arm(block=False)
         # self._robot.mover.travel(300, backwards=True)
-        self._robot.mover.rotate(degrees=90, arc_radius=250, backwards=True)
+        self._robot.mover.rotate(degrees=90, arc_radius=245, backwards=True)
 
     def go_to_first_fibre_from_start_part_2(self):
         # Go to end

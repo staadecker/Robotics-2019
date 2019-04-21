@@ -28,6 +28,7 @@ class ArmController:
         self._arm.stop_action = ev3dev2.motor.Motor.STOP_ACTION_HOLD
         self._arm.ramp_up_sp = self._ACCELERATION
         self._arm.ramp_down_sp = self._ACCELERATION
+        self._arm.polarity = ev3dev2.motor.Motor.POLARITY_NORMAL
 
         self._position = self._AT_FIBRE_OPTIC
 

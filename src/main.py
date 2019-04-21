@@ -6,7 +6,7 @@ from lib.robot import Robot
 import lib.actions
 import time
 
-DEBUGGING = False
+DEBUGGING = True
 
 
 class Main:

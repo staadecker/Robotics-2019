@@ -1,13 +1,13 @@
 import unittest
 from tests import util
 from lib.sensors import ColorSensor
-from lib import constants
+from lib import ports
 
 
 @unittest.skipUnless(util.is_running_on_ev3(), "Requires EV3")
 class TestEV3ColorSensor(unittest.TestCase):
     def setUp(self):
-        self.color_sensor = ColorSensor(constants.LEFT_COLOR_SENSOR)
+        self.color_sensor = ColorSensor(ports.LEFT_COLOR_SENSOR)
 
     def test_color(self):
         input("Place the left line color sensor on a black line then press enter.")

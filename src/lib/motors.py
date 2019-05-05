@@ -1,145 +1,122 @@
 import math
 
 import ev3dev2.motor
-
-import lib.constants
-from lib import constants
+import lib.ports
 
 
-class ArmController:
+class Lift:
     """Class to control arm of robot"""
 
-    _ACCELERATION = 2000  # Time in milliseconds the motor would take to reach 100% max speed from not moving
-    _DEFAULT_SPEED = 30
-    _DEFAULT_SPEED_WITH_OBJECT = 7
+    _ACCELERATION = 1000  # Time in milliseconds the motor would take to reach 100% max speed from not moving
+    _DEFAULT_SPEED = 80
 
     # Degrees predictions for arm
-    _DEG_TO_FIBRE_OPTIC = 90  # TODO Correct
-    _DEG_TO_DEVICE = 45
-    _DEG_TO_BONUS = 60
+    _DEG_TO_FIBRE = 580
+    _DEG_TO_NODE = 500
 
-    _RAISED = 0
-    _AT_FIBRE_OPTIC = 1
-    _AT_DEVICE = 2
-    _AT_BONUS = 3
+    _POS_UP = 0
+    _POS_FIBRE = 1
+    _POS_NODE = 2
 
     def __init__(self):
-        self._arm = ev3dev2.motor.LargeMotor(lib.constants.ARM_MOTOR_PORT)
-        self._arm.stop_action = ev3dev2.motor.Motor.STOP_ACTION_HOLD
-        self._arm.ramp_up_sp = self._ACCELERATION
-        self._arm.ramp_down_sp = self._ACCELERATION
-        self._arm.polarity = ev3dev2.motor.Motor.POLARITY_NORMAL
+        self._position = self._POS_UP
+        self._lift = ev3dev2.motor.MediumMotor(lib.ports.LIFT_MOTOR_PORT)
 
-        self._position = self._AT_FIBRE_OPTIC
+        self._lift.ramp_up_sp = self._ACCELERATION
 
-    def raise_arm(self, slow=False, calibrate=False, block=True):
-        """Resets arm to raised position"""
+        self._lift.polarity = ev3dev2.motor.Motor.POLARITY_NORMAL
 
-        speed = self._DEFAULT_SPEED_WITH_OBJECT if slow else self._DEFAULT_SPEED
+    def calibrate(self):
+        self._lift.on(self._DEFAULT_SPEED)
+        self._lift.wait_until_not_moving()
 
-        if calibrate:
-            self._arm.on(-speed)
-            self._arm.wait_until_not_moving()
+        self._lift.on_for_degrees(-self._DEFAULT_SPEED, 50, block=False)
 
-            self._arm.on_for_degrees(speed, 30, block=True)
+        self._position = self._POS_UP
 
-            self._position = self._RAISED
+    def up(self, block=True):
+        if self._position == self._POS_FIBRE:
+            self._lift.on_for_degrees(self._DEFAULT_SPEED, self._DEG_TO_FIBRE, block=block)
+
+            self._position = self._POS_UP
+        elif self._position == self._POS_NODE:
+            self._lift.on_for_degrees(self._DEFAULT_SPEED, self._DEG_TO_NODE, block=block)
+
+            self._position = self._POS_UP
         else:
-            if self._position == self._AT_FIBRE_OPTIC:
-                self._arm.on_for_degrees(-speed, self._DEG_TO_FIBRE_OPTIC, block=block)
-                self._position = self._RAISED
-            elif self._position == self._AT_DEVICE:
-                self._arm.on_for_degrees(-speed, self._DEG_TO_DEVICE, block=block)
-                self._position = self._RAISED
-            elif self._position == self._AT_BONUS:
-                self._arm.on_for_degrees(-speed, degrees=self._DEG_TO_BONUS)
-                self._position = self._RAISED
+            print("WARNING: called Lift.up() when already up")
 
-    def lower_to_device(self, slow=False, block=True):
-        """Lowers arm the degrees to pick up device"""
+    def to_fibre(self, block=True):
+        """Lowers arm the degrees to pick up the fibre"""
 
-        speed = self._DEFAULT_SPEED_WITH_OBJECT if slow else self._DEFAULT_SPEED
+        if self._position == self._POS_UP:
+            self._lift.on_for_degrees(-self._DEFAULT_SPEED, self._DEG_TO_FIBRE, block=block)
 
-        if self._position == self._RAISED:
-            self._arm.on_for_degrees(speed, self._DEG_TO_DEVICE, block=block)
+            self._position = self._POS_FIBRE
+        else:
+            print("WARNING: called Lift.to_fibre() when not in up position")
 
-            self._position = self._AT_DEVICE
+    def to_node(self, block=True):
+        """Lowers arm the degrees to pick up the fibre"""
 
-    def lower_to_fibre_optic(self, slow=False, block=True):
-        """Lowers arm the degrees to pick up fibre optic cable"""
+        if self._position == self._POS_UP:
+            self._lift.on_for_degrees(-self._DEFAULT_SPEED, self._DEG_TO_NODE, block=block)
 
-        speed = self._DEFAULT_SPEED_WITH_OBJECT if slow else self._DEFAULT_SPEED
-
-        if self._position == self._RAISED:
-            self._arm.on_for_degrees(speed, self._DEG_TO_FIBRE_OPTIC, block=block)
-
-            self._position = self._AT_FIBRE_OPTIC
-
-    def lower_to_bonus(self, block=True):
-        """Lowers arm the degrees to pick up fibre optic cable"""
-
-        if self._position == self._RAISED:
-            self._arm.on_for_degrees(self._DEFAULT_SPEED, self._DEG_TO_BONUS, block=block)
-
-            self._position = self._AT_BONUS
-
-    def wiggle_fibre_optic(self):
-        for i in range(2):
-            self._arm.on_for_degrees(-30, 30)
-            self._arm.on_for_degrees(30, 30)
+            self._position = self._POS_NODE
+        else:
+            print("WARNING: called Lift.to_fibre() when not in up position")
 
 
-class SwivelController:
+class Swivel:
     """Class to control the robot's swivel"""
 
-    _ACCELERATION = 100  # Time in milliseconds the motor would take to reach 100% max speed from not moving
-    _DEFAULT_SPEED = 40  # In percent
-    _START_POSITION = 180
+    _ACCELERATION = 300  # Time in milliseconds the motor would take to reach 100% max speed from not moving
+    _DEFAULT_SPEED = 80  # In percent
+    _START_POSITION = 0
 
     def __init__(self):
-        self._swivel = ev3dev2.motor.MediumMotor(lib.constants.SWIVEL_MOTOR_PORT)
+        self._swivel = ev3dev2.motor.MediumMotor(lib.ports.SWIVEL_MOTOR_PORT)
         self._swivel.ramp_up_sp = self._ACCELERATION
         self._swivel.ramp_down_sp = self._ACCELERATION
-        self._swivel.position = self._convert_deg_to_pos(self._START_POSITION)
+        self._swivel.position = self._START_POSITION
         self._swivel.stop_action = ev3dev2.motor.Motor.STOP_ACTION_HOLD
 
-    def point_forward(self, speed=_DEFAULT_SPEED, block=True):
-        self._swivel.on_to_position(speed, 0, block=block)
+    def forward(self, block=False):
+        self._swivel.on_to_position(self._DEFAULT_SPEED, 0, block=block)
 
-    def point_left(self, speed=_DEFAULT_SPEED, block=True):
-        self._swivel.on_to_position(speed, self._convert_deg_to_pos(90), block=block)
+    def left(self, block=False):
+        self._swivel.on_to_position(self._DEFAULT_SPEED, 90, block=block)
 
-    def point_right(self, speed=_DEFAULT_SPEED, block=True):
-        self._swivel.on_to_position(speed, self._convert_deg_to_pos(-90), block=block)
+    def right(self, block=False):
+        self._swivel.on_to_position(self._DEFAULT_SPEED, -90, block=block)
 
-    def point_backwards(self, speed=_DEFAULT_SPEED, block=True):
-        self._swivel.on_to_position(speed, self._convert_deg_to_pos(180), block=block)
+    def back(self, block=False):
+        self._swivel.on_to_position(self._DEFAULT_SPEED, 180, block=block)
 
     def reset(self):
-        self._swivel.on_to_position(self._DEFAULT_SPEED, self._convert_deg_to_pos(self._START_POSITION))
-
-    def shake(self):
-        self._swivel.on_for_degrees(10, -30)
-        self._swivel.on_for_degrees(10, 60)
-        self._swivel.on_for_degrees(10, -30)
-
-    def _convert_deg_to_pos(self, degrees):
-        return degrees * self._swivel.count_per_rot / 360
+        self._swivel.on_to_position(self._DEFAULT_SPEED, self._START_POSITION)
 
 
 class Mover:
     """Class to move the robot"""
 
-    _WHEEL_RADIUS = 40.8
-    CHASSIS_RADIUS = 57.5
+    _WHEEL_RADIUS = 28
+    CHASSIS_RADIUS = 71
 
-    _DEFAULT_SPEED = 20
-    _DEFAULT_ROTATE_SPEED = 10
+    _DEFAULT_SPEED = 40
+    _DEFAULT_ROTATE_SPEED = 30
+    _ACCELERATION = 900
 
     def __init__(self, reverse_motors=False):
-        self._control = ev3dev2.motor.MoveTank(constants.LEFT_MOTOR_PORT, constants.RIGHT_MOTOR_PORT)
+        self._mover = ev3dev2.motor.MoveTank(lib.ports.LEFT_MOTOR_PORT, lib.ports.RIGHT_MOTOR_PORT,
+                                             motor_class=ev3dev2.motor.MediumMotor)
 
-        for motor in self._control.motors.values():
+        self._mover.left_motor.ramp_up_sp = self._ACCELERATION
+        self._mover.right_motor.ramp_up_sp = self._ACCELERATION
+        self._mover.left_motor.ramp_down_sp = self._ACCELERATION
+        self._mover.right_motor.ramp_down_sp = self._ACCELERATION
+
+        for motor in self._mover.motors.values():
             if reverse_motors:
                 motor.polarity = ev3dev2.motor.Motor.POLARITY_INVERSED
             else:
@@ -149,9 +126,9 @@ class Mover:
         """Make the robot move forward or backward a certain number of mm"""
         degrees_for_wheel = Mover._convert_rad_to_deg(Mover._convert_distance_to_rad(distance))
         if backwards:
-            self._control.on_for_degrees(-speed, -speed, degrees_for_wheel, block=block)
+            self._mover.on_for_degrees(-speed, -speed, degrees_for_wheel, block=block)
         else:
-            self._control.on_for_degrees(speed, speed, degrees_for_wheel, block=block)
+            self._mover.on_for_degrees(speed, speed, degrees_for_wheel, block=block)
 
     def rotate(self, degrees=None, arc_radius=0, clockwise=True, speed=_DEFAULT_ROTATE_SPEED, block=True,
                backwards=False) -> None:
@@ -174,14 +151,14 @@ class Mover:
 
             if clockwise:
                 if backwards:
-                    self._control.on(-inside_speed, -speed)
+                    self._mover.on(-inside_speed, -speed)
                 else:
-                    self._control.on(speed, inside_speed)
+                    self._mover.on(speed, inside_speed)
             else:
                 if backwards:
-                    self._control.on(-speed, -inside_speed)
+                    self._mover.on(-speed, -inside_speed)
                 else:
-                    self._control.on(inside_speed, speed)
+                    self._mover.on(inside_speed, speed)
         else:
             degrees_in_rad = Mover._convert_deg_to_rad(degrees)
             inside_distance = (arc_radius - Mover.CHASSIS_RADIUS) * degrees_in_rad
@@ -193,14 +170,14 @@ class Mover:
 
             if clockwise:
                 if backwards:
-                    self._control.on_for_degrees(-inside_speed, -speed, outside_degrees, block=block)
+                    self._mover.on_for_degrees(-inside_speed, -speed, outside_degrees, block=block)
                 else:
-                    self._control.on_for_degrees(speed, inside_speed, outside_degrees, block=block)
+                    self._mover.on_for_degrees(speed, inside_speed, outside_degrees, block=block)
             else:
                 if backwards:
-                    self._control.on_for_degrees(-speed, -inside_speed, outside_degrees, block=block)
+                    self._mover.on_for_degrees(-speed, -inside_speed, outside_degrees, block=block)
                 else:
-                    self._control.on_for_degrees(inside_speed, speed, outside_degrees, block=block)
+                    self._mover.on_for_degrees(inside_speed, speed, outside_degrees, block=block)
 
     def steer(self, steering, speed=_DEFAULT_SPEED):
         """Make the robot move in a direction. -100 is to the left. +100 is to the right. 0 is straight"""
@@ -213,13 +190,13 @@ class Mover:
         inside_speed = speed - speed * abs(steering) / 50
 
         if steering >= 0:
-            self._control.on(speed, inside_speed)
+            self._mover.on(speed, inside_speed)
         else:
-            self._control.on(inside_speed, speed)
+            self._mover.on(inside_speed, speed)
 
     def stop(self):
         """Make robot stop"""
-        self._control.off()
+        self._mover.off()
 
     @staticmethod
     def _convert_distance_to_rad(distance):

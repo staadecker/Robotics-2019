@@ -3,7 +3,7 @@ import main
 from lib import line_follower
 from tests import util
 import lib.motors
-import lib.constants
+import lib.ports
 
 
 @unittest.skipUnless(util.is_running_on_ev3(), "Requires EV3")
@@ -74,7 +74,7 @@ class TestWithFullSetup(unittest.TestCase):
 class TestReverseColorSensor(unittest.TestCase):
     def test_reverse(self):
         mover = lib.motors.Mover(reverse_motors=True)
-        lf = line_follower.LineFollower(mover, port=lib.constants.SIDE_COLOR_SENSOR, kp=0.2, kd=0.2, ki=0)
+        lf = line_follower.LineFollower(mover, port=lib.ports.SIDE_COLOR_SENSOR, kp=0.2, kd=0.2, ki=0)
         lf.follow_on_right(line_follower.StopAfterTime(15000))
 
 

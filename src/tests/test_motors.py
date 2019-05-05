@@ -7,7 +7,7 @@ from tests import util
 class TestArm(unittest.TestCase):
 
     def setUp(self):
-        self.arm = motors.ArmController()
+        self.arm = motors.Lift()
 
     def test_raise(self):
         self.arm.raise_arm()

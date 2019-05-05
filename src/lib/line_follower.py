@@ -1,7 +1,7 @@
 from lib.motors import Mover
 from lib.sensors import ColorSensor
 from typing import List
-import lib.constants
+import lib.ports
 
 import datetime
 import abc
@@ -38,7 +38,7 @@ class LineFollower:
 
     _MIDDLE_REFLECTION_VALUE = (_WHITE_REFLECTION - _BLACK_REFLECTION) * _FRACTION_OF_DELTA + _BLACK_REFLECTION
 
-    def __init__(self, mover: Mover, port=lib.constants.LINE_FOLLOWER_COLOR_SENSOR):
+    def __init__(self, mover: Mover, port=lib.ports.LINE_FOLLOWER_COLOR_SENSOR):
         self.movement_controller = mover
         self.color_sensor = ColorSensor(port)
 

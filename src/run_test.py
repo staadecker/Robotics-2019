@@ -10,5 +10,5 @@ if __name__ == '__main__':
     main.prepare()
     main.actions.go_to_drop_off_fibre()
     main.actions.drop_off_fibre()
-    main.robot.tear_down()
+    main.robot.end()
 

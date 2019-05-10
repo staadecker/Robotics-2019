@@ -3,93 +3,54 @@ from lib.sensors import ColorSensor
 from typing import List
 import lib.ports
 
-import datetime
+import time
 import abc
-import lib.robot
-
-
-class StopIndicator(abc.ABC):
-
-    @abc.abstractmethod
-    def should_end(self) -> bool:
-        pass
-
-    @abc.abstractmethod
-    def reset(self) -> None:
-        pass
+import main
 
 
 class LineFollower:
     """Responsible for following a line using color sensors"""
 
-    _WHITE_REFLECTION = 85
-    _BLACK_REFLECTION = 10
-    _FRACTION_OF_DELTA = 0.5
+    _MIDDLE_VALUE = 0.5
 
     _DEFAULT_KP = 0.25
     _DEFAULT_KD = 1.25
     _DEFAULT_KI = 0.000
-    _DEFAULT_SPEED = 35
-    _DEFAULT_SLOW_SPEED = 20
-
-    _DEFAULT_SLOW_KP = 0.4
-    _DEFAULT_SLOW_KD = 1.25
-    _DEFAULT_SLOW_KI = 0.000
-
-    _MIDDLE_REFLECTION_VALUE = (_WHITE_REFLECTION - _BLACK_REFLECTION) * _FRACTION_OF_DELTA + _BLACK_REFLECTION
+    _DEFAULT_SPEED = 60
 
     def __init__(self, mover: Mover, port=lib.ports.LINE_FOLLOWER_COLOR_SENSOR):
         self.movement_controller = mover
         self.color_sensor = ColorSensor(port)
 
-    def follow_on_left(self, stop_indicator: StopIndicator, **kwargs):
-        self._follow_line(stop_indicator, True, **kwargs)
-
-    def follow_on_right(self, stop_indicator: StopIndicator, **kwargs):
-        self._follow_line(stop_indicator, False, **kwargs)
-
-    def _follow_line(self, stop_indicator, inverse_correction, stop=True, callback=None, slow=False,
-                     kp=None, kd=None, ki=None):
+    def follow(self,
+               callback,
+               on_left=True,
+               kp=_DEFAULT_KP,
+               kd=_DEFAULT_KD,
+               ki=_DEFAULT_KI,
+               speed=_DEFAULT_SPEED):
         """
         Method used to follow the line.
-
-        :param stop_indicator : Object that can be used to know when to stop following the line
-        :param stop : Determines if the line follower should stop following when finished or just pass over the control
-        :param callback : method to be called repeatedly when following the line
         """
 
         last_error = 0
         total_error = 0
-        error_was_positive = True
+        stop_called = False
 
-        speed = LineFollower._DEFAULT_SLOW_SPEED if slow else LineFollower._DEFAULT_SPEED
+        def stop():
+            nonlocal stop_called
+            stop_called = True
 
-        if kp is None:
-            kp = LineFollower._DEFAULT_SLOW_KP if slow else LineFollower._DEFAULT_KP
-
-        if kd is None:
-            kd = LineFollower._DEFAULT_SLOW_KD if slow else LineFollower._DEFAULT_KD
-
-        if ki is None:
-            ki = LineFollower._DEFAULT_SLOW_KI if slow else LineFollower._DEFAULT_KI
-
-        while not stop_indicator.should_end():
-            error = self._MIDDLE_REFLECTION_VALUE - self.color_sensor.get_reflected()
-
-            error_is_positive = (True if error > 0 else False)
-            if error_was_positive != error_is_positive:
-                total_error = 0
-                error_was_positive = error_is_positive
+        while not stop_called:
+            error = self._MIDDLE_VALUE - self.color_sensor.get_reflected()
 
             total_error += error
 
             direction = kp * error + kd * (
                     error - last_error) + ki * total_error
 
-            if inverse_correction:
+            if on_left:
                 direction *= -1
-
-            # print(direction)
 
             if direction > 100:
                 direction = 100
@@ -102,63 +63,69 @@ class LineFollower:
 
             last_error = error
 
-            if callback is not None:
-                callback()
+            callback(stop)
 
-        #self.movement_controller.travel(10)
+        self.movement_controller.stop()
 
-        if stop:
-            self.movement_controller.stop()
+
+class StopIndicator(abc.ABC):
+
+    @abc.abstractmethod
+    def callback(self, stop):
+        pass
+
+    @abc.abstractmethod
+    def reset(self) -> None:
+        pass
+
+    def __call__(self, stop):
+        self.callback(stop)
 
 
 class StopAfterTime(StopIndicator):
     def __init__(self, delay):
         """
-        :param delay: Time in milliseconds to wait before stopping
+        :param delay: Time in seconds to wait before stopping
         """
         self.delay = delay
         self.end_time = None
 
-    def should_end(self) -> bool:
-        if self.end_time is None:
-            self.end_time = self._get_time_in_millis() + self.delay
+    def callback(self, stop):
+        current_time = self._get_time_in_seconds()
 
-        return self._get_time_in_millis() > self.end_time
+        if self.end_time is None:
+            self.end_time = current_time + self.delay
+
+        elif current_time > self.end_time:
+            stop()
 
     def reset(self) -> None:
         self.end_time = None
 
     @staticmethod
-    def _get_time_in_millis():
-        return datetime.datetime.now().timestamp() * 1000
+    def _get_time_in_seconds():
+        return time.time()
 
 
 class StopAtColor(StopIndicator):
-
     def __init__(self, color_sensor: ColorSensor, colours):
         self.color_sensor = color_sensor
         self._colours = colours
-        self._times_where_got_correct_color = 0
 
-    def should_end(self) -> bool:
+    def callback(self, stop):
         color_reading = self.color_sensor.get_color()
 
         if color_reading in self._colours:
-            self._times_where_got_correct_color += 1
-
-        if self._times_where_got_correct_color > 0:
-            lib.robot.Robot.beep()
-            return True
-
-        return False
+            main.Main.beep()
+            stop()
 
     def reset(self) -> None:
-        self._times_where_got_correct_color = 0
+        pass
 
 
 class StopAtCrossLine(StopAtColor):
     def __init__(self, color_sensor: ColorSensor):
-        super().__init__(color_sensor, (ColorSensor.BLACK, ColorSensor.BROWN))
+        super().__init__(color_sensor, (ColorSensor.BLACK,))
         self.color_sensor = color_sensor
 
 
@@ -168,16 +135,15 @@ class StopAfterXTimes(StopIndicator):
         self.should_stop = should_stop
         self.counter = 0
 
-    def should_end(self) -> bool:
-        if self.should_stop.should_end():
+    def callback(self, stop):
+        def _increment_counter():
             self.counter += 1
+            self.should_stop.reset()
 
             if self.counter == self.number_of_times:
-                return True
-            else:
-                self.should_stop.reset()
+                stop()
 
-        return False
+        self.should_stop.callback(_increment_counter)
 
     def reset(self) -> None:
         self.counter = 0
@@ -189,14 +155,14 @@ class StopAfterMultiple(StopIndicator):
         self.stop_indicators = list_of_indicators
         self.counter = 0
 
-    def should_end(self) -> bool:
-        if self.stop_indicators[self.counter].should_end():
+    def callback(self, stop):
+        def _increment_counter():
             self.counter += 1
 
             if self.counter == len(self.stop_indicators):
-                return True
+                stop()
 
-        return False
+        self.stop_indicators[self.counter].callback(_increment_counter)
 
     def reset(self) -> None:
         self.counter = 0
@@ -206,8 +172,8 @@ class StopAfterMultiple(StopIndicator):
 
 class StopNever(StopIndicator):
 
-    def should_end(self) -> bool:
-        return False
+    def callback(self, stop):
+        pass
 
     def reset(self) -> None:
         pass

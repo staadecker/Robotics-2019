@@ -1,10 +1,8 @@
 from lib.motors import Mover
-from lib.sensors import ColorSensor
-from typing import List
+import lib.sensors as sensors
 import lib.ports
 
 import time
-import abc
 import main
 
 
@@ -13,14 +11,15 @@ class LineFollower:
 
     _MIDDLE_VALUE = 0.5
 
-    _DEFAULT_KP = 0.25
+    _DEFAULT_KP = 0.7
     _DEFAULT_KD = 1.25
     _DEFAULT_KI = 0.000
     _DEFAULT_SPEED = 60
 
-    def __init__(self, mover: Mover, port=lib.ports.LINE_FOLLOWER_COLOR_SENSOR):
+    def __init__(self, mover: Mover):
         self.movement_controller = mover
-        self.color_sensor = ColorSensor(port)
+        self.front_sensor = sensors.EV3ColorSensor(lib.ports.FRONT_SENSOR)
+        self.back_sensor = sensors.EV3ColorSensor(lib.ports.BACK_SENSOR)
 
     def follow(self,
                callback,
@@ -28,7 +27,8 @@ class LineFollower:
                kp=_DEFAULT_KP,
                kd=_DEFAULT_KD,
                ki=_DEFAULT_KI,
-               speed=_DEFAULT_SPEED):
+               speed=_DEFAULT_SPEED,
+               backwards=False):
         """
         Method used to follow the line.
         """
@@ -42,14 +42,14 @@ class LineFollower:
             stop_called = True
 
         while not stop_called:
-            error = self._MIDDLE_VALUE - self.color_sensor.get_reflected()
+            error = self._MIDDLE_VALUE - self.front_sensor.get_reflected()
 
             total_error += error
 
             direction = kp * error + kd * (
                     error - last_error) + ki * total_error
 
-            if on_left:
+            if on_left != backwards:
                 direction *= -1
 
             if direction > 100:
@@ -68,15 +68,12 @@ class LineFollower:
         self.movement_controller.stop()
 
 
-class StopIndicator(abc.ABC):
-
-    @abc.abstractmethod
+class StopIndicator:
     def callback(self, stop):
-        pass
+        print("WARNING: not implemented, callback in stop indicator")
 
-    @abc.abstractmethod
     def reset(self) -> None:
-        pass
+        print("WARNING: not implemented, reset in stop indicator")
 
     def __call__(self, stop):
         self.callback(stop)
@@ -108,7 +105,7 @@ class StopAfterTime(StopIndicator):
 
 
 class StopAtColor(StopIndicator):
-    def __init__(self, color_sensor: ColorSensor, colours):
+    def __init__(self, color_sensor: sensors.ColorSensor, colours):
         self.color_sensor = color_sensor
         self._colours = colours
 
@@ -116,7 +113,7 @@ class StopAtColor(StopIndicator):
         color_reading = self.color_sensor.get_color()
 
         if color_reading in self._colours:
-            main.Main.beep()
+            main.beep()
             stop()
 
     def reset(self) -> None:
@@ -124,8 +121,8 @@ class StopAtColor(StopIndicator):
 
 
 class StopAtCrossLine(StopAtColor):
-    def __init__(self, color_sensor: ColorSensor):
-        super().__init__(color_sensor, (ColorSensor.BLACK,))
+    def __init__(self, color_sensor: sensors.ColorSensor):
+        super().__init__(color_sensor, (sensors.BLACK,))
         self.color_sensor = color_sensor
 
 
@@ -151,7 +148,7 @@ class StopAfterXTimes(StopIndicator):
 
 
 class StopAfterMultiple(StopIndicator):
-    def __init__(self, list_of_indicators: List[StopIndicator]):
+    def __init__(self, list_of_indicators):
         self.stop_indicators = list_of_indicators
         self.counter = 0
 
@@ -183,7 +180,7 @@ def get_stop_after_x_intersections(number_of_intersections_to_pass, color_sensor
     if include_initial_delay:
         return StopAfterXTimes(number_of_intersections_to_pass + 1,
                                StopAfterMultiple([
-                                   StopAfterTime(300),
+                                   StopAfterTime(0.3),
                                    StopAtCrossLine(color_sensor_to_use)])
                                )
 
@@ -192,7 +189,7 @@ def get_stop_after_x_intersections(number_of_intersections_to_pass, color_sensor
             StopAfterXTimes(number_of_intersections_to_pass,
                             StopAfterMultiple([
                                 StopAtCrossLine(color_sensor_to_use),
-                                StopAfterTime(300)
+                                StopAfterTime(0.3)
                             ])),
             StopAtCrossLine(color_sensor_to_use)
         ])

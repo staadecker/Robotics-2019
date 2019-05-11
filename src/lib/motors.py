@@ -20,7 +20,7 @@ class Lift:
 
     def __init__(self):
         self._position = self._POS_UP
-        self._lift = ev3dev2.motor.MediumMotor(lib.ports.LIFT_MOTOR_PORT)
+        self._lift = ev3dev2.motor.MediumMotor(lib.ports.LIFT_MOTOR)
 
         self._lift.ramp_up_sp = self._ACCELERATION
 
@@ -75,7 +75,7 @@ class Swivel:
     _START_POSITION = 0
 
     def __init__(self):
-        self._swivel = ev3dev2.motor.MediumMotor(lib.ports.SWIVEL_MOTOR_PORT)
+        self._swivel = ev3dev2.motor.MediumMotor(lib.ports.SWIVEL_MOTOR)
         self._swivel.ramp_up_sp = self._ACCELERATION
         self._swivel.ramp_down_sp = self._ACCELERATION
         self._swivel.position = self._START_POSITION
@@ -108,7 +108,7 @@ class Mover:
     _ACCELERATION = 900
 
     def __init__(self, reverse_motors=False):
-        self._mover = ev3dev2.motor.MoveTank(lib.ports.LEFT_MOTOR_PORT, lib.ports.RIGHT_MOTOR_PORT,
+        self._mover = ev3dev2.motor.MoveTank(lib.ports.LEFT_MOTOR, lib.ports.RIGHT_MOTOR,
                                              motor_class=ev3dev2.motor.MediumMotor)
 
         self._mover.left_motor.ramp_up_sp = self._ACCELERATION

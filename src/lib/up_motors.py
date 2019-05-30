@@ -105,7 +105,7 @@ class Mover:
 
     _DEFAULT_SPEED = 40
     _DEFAULT_ROTATE_SPEED = 30
-    _RAMP_UP = 900
+    _RAMP_UP = 300
     _RAMP_DOWN = 300
 
     def __init__(self, reverse_motors=False):
@@ -141,9 +141,7 @@ class Mover:
         :param block: whether to return immediately or to wait for end of movement
         :param backwards: whether the rotate movement should move the robot backwards
         """
-        if degrees <= 0:
-            raise ValueError("Can't rotate a negative number of degrees. Use clockwise=False to turn counter-clockwise")
-
+        
         if degrees is None:
             if block:
                 raise ValueError("Can't run forever with block=True")
@@ -161,6 +159,9 @@ class Mover:
                 else:
                     self._mover.on(inside_speed, speed)
         else:
+            if degrees <= 0:
+                raise ValueError("Can't rotate a negative number of degrees. Use clockwise=False to turn counter-clockwise")
+            
             degrees_in_rad = Mover._convert_deg_to_rad(degrees)
             inside_distance = (arc_radius - Mover.CHASSIS_RADIUS) * degrees_in_rad
             outside_distance = (arc_radius + Mover.CHASSIS_RADIUS) * degrees_in_rad
@@ -194,7 +195,7 @@ class Mover:
             self._mover.on(speed, inside_speed)
         else:
             self._mover.on(inside_speed, speed)
-
+    
     def stop(self):
         """Make robot stop"""
         self._mover.off()

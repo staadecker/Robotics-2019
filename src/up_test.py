@@ -2,5 +2,5 @@
 
 import up_main as main
 
-main.Main().test()
+main.test()
 

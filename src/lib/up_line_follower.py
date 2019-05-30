@@ -15,7 +15,7 @@ class LineFollower:
         self.mover = mover
         self.back_sensor = back_sensor
         self.front_sensor = front_sensor
-        self.last_error = 0
+        self.last_error = None
 
     def follow(self,
                on_left=True,
@@ -34,8 +34,10 @@ class LineFollower:
 
         error = self._MIDDLE_VALUE - sensor_value
 
-        direction = kp * error + kd * (
-                error - self.last_error)  # + ki * total_error
+        if self.last_error is None:
+            direction = kp * error
+        else:
+            direction = kp * error + kd * (error - self.last_error)
 
         if on_left != backwards:
             direction *= -1
@@ -51,8 +53,6 @@ class LineFollower:
 
         self.last_error = error
 
-        # graph.save_to_file()
-
     def follow_for_time(self, time_in_sec, stop=True, **kwargs):
         start_time = time.time()
 
@@ -66,13 +66,15 @@ class LineFollower:
         while not color_sensor.get_color() in colours:
             self.follow(**kwargs)
 
+        print("MARK")
         if stop:
             self.mover.stop()
+            self.last_error = None
 
     def follow_until_line(self, color_sensor: sensors.ColorSensor, stop=True, **kwargs):
         self.follow_until_color(color_sensor, (sensors.BLACK,), stop=stop, **kwargs)
 
-    def follow_until_intersection_x(self, number_of_intersections, color_sensor, include_initial_delay=True, stop=True,
+    def follow_until_intersection_x(self, number_of_intersections, color_sensor, include_initial_delay=False, stop=True,
                                     **kwargs):
         if include_initial_delay:
             self.follow_for_time(0.3, stop=False, **kwargs)
@@ -85,3 +87,4 @@ class LineFollower:
 
         if stop:
             self.mover.stop()
+            self.last_error = None

@@ -48,17 +48,22 @@ class Main:
         self.lift.up()
 
     def test(self):
-        self.go_to_first_fibre()
+        # self.lift.calibrate()
+        # self.lift.to_node()
+        # time.sleep(2)
+        self.line_follower.follow_for_time(3)
 
     def go_to_first_fibre(self):
         self.mover.rotate(6, clockwise=False)
         self.mover.travel(100)
-        self.line_follower.follow_until_line(self.left_sensor)
-        self.mover.rotate(90, clockwise=False, arc_radius=50)
+        self.line_follower.follow_until_line(self.left_sensor, speed=50)
+        self.rotate_until_line(clockwise=False, arc_radius=50)
         self.line_follower.follow_until_intersection_x(6, self.left_sensor, on_left=False)
+
+        # Line up
         self.mover.rotate(60, clockwise=False, speed=15)
         self.mover.travel(70, speed=15)
-        self.mover.rotate(50, speed=15)
+        self.mover.rotate(40, speed=15)
         self.lift.to_fibre()
         self.line_follower.follow_until_color(self.left_sensor, (sensors.YELLOW,), on_left=False,
                                               speed=15, kp=1, kd=0)
@@ -66,6 +71,32 @@ class Main:
     def run(self):
         self.prepare()
         self.go_to_first_fibre()
+        self.lift.up()
+
+        self.mover.rotate(clockwise=False, degrees=30, speed=20)
+        self.mover.travel(backwards=True, distance=200, speed=20)
+        self.mover.rotate(degrees=35, speed=20)
+        self.line_follower.follow_until_intersection_x(2, self.left_sensor, include_initial_delay=False, backwards=True)
+        self.mover.rotate(degrees=90, clockwise=False, arc_radius=105)
+        self.line_follower.follow_until_intersection_x(2, self.left_sensor, on_left=False)
+        self.rotate_until_line(clockwise=False, arc_radius=50)
+        self.line_follower.follow_until_color(self.left_sensor, (sensors.RED,), on_left=False)
+        self.mover.travel(speed=15, block=False)
+        while not self.left_sensor == sensors.WHITE:
+            pass
+        self.mover.stop()
+
+        self.lift.to_fibre()
+
+        # self.mover.travel(backwards=True, block=False)
+        # time.sleep(0.3)
+
+        # for i in range(2):
+        #     while not self.left_sensor.get_color() == sensors.BLACK:
+        #         pass
+
+        #     if i != 1:
+        #         time.sleep(0.3)
 
     def prepare(self):
         ###########
@@ -80,7 +111,7 @@ class Main:
         while sensor.get_reflected() < 60:
             pass
 
-        while sensor.get_reflected() > 30:
+        while sensor.get_reflected() > 40:
             pass
 
         if cross_line:

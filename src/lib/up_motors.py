@@ -2,7 +2,7 @@ import math
 
 import ev3dev2.motor
 import lib.up_ports as ports
-
+import time
 
 class Lift:
     """Class to control arm of robot"""
@@ -123,13 +123,24 @@ class Mover:
             else:
                 motor.polarity = ev3dev2.motor.Motor.POLARITY_NORMAL
 
-    def travel(self, distance, speed=_DEFAULT_SPEED, block=True, backwards=False):
+    def travel(self, distance=None, speed=_DEFAULT_SPEED, block=True, backwards=False):
         """Make the robot move forward or backward a certain number of mm"""
-        degrees_for_wheel = Mover._convert_rad_to_deg(Mover._convert_distance_to_rad(distance))
-        if backwards:
-            self._mover.on_for_degrees(-speed, -speed, degrees_for_wheel, block=block)
+        if distance is None:
+            if block:
+                raise ValueError("Can't run forever with block=True")
+            if backwards:
+                self._mover.on(-speed, -speed)
+            else:
+                self._mover.on(speed, speed)
         else:
-            self._mover.on_for_degrees(speed, speed, degrees_for_wheel, block=block)
+            degrees_for_wheel = Mover._convert_rad_to_deg(Mover._convert_distance_to_rad(distance))
+            if backwards:
+                self._mover.on_for_degrees(-speed, -speed, degrees_for_wheel, block=block)
+            else:
+                self._mover.on_for_degrees(speed, speed, degrees_for_wheel, block=block)
+            
+            if block:
+                time.sleep(0.1)
 
     def rotate(self, degrees=None, arc_radius=0, clockwise=True, speed=_DEFAULT_ROTATE_SPEED, block=True,
                backwards=False) -> None:
@@ -141,7 +152,7 @@ class Mover:
         :param block: whether to return immediately or to wait for end of movement
         :param backwards: whether the rotate movement should move the robot backwards
         """
-        
+
         if degrees is None:
             if block:
                 raise ValueError("Can't run forever with block=True")
@@ -160,14 +171,15 @@ class Mover:
                     self._mover.on(inside_speed, speed)
         else:
             if degrees <= 0:
-                raise ValueError("Can't rotate a negative number of degrees. Use clockwise=False to turn counter-clockwise")
-            
+                raise ValueError(
+                    "Can't rotate a negative number of degrees. Use clockwise=False to turn counter-clockwise")
+
             degrees_in_rad = Mover._convert_deg_to_rad(degrees)
             inside_distance = (arc_radius - Mover.CHASSIS_RADIUS) * degrees_in_rad
             outside_distance = (arc_radius + Mover.CHASSIS_RADIUS) * degrees_in_rad
 
-            time = outside_distance / speed
-            inside_speed = inside_distance / time
+            movement_time = outside_distance / speed
+            inside_speed = inside_distance / movement_time
             outside_degrees = Mover._convert_rad_to_deg(Mover._convert_distance_to_rad(outside_distance))
 
             if clockwise:
@@ -180,6 +192,9 @@ class Mover:
                     self._mover.on_for_degrees(-speed, -inside_speed, outside_degrees, block=block)
                 else:
                     self._mover.on_for_degrees(inside_speed, speed, outside_degrees, block=block)
+
+            if block:
+                time.sleep(0.1)
 
     def steer(self, steering, speed=_DEFAULT_SPEED):
         """Make the robot move in a direction. -100 is to the left. +100 is to the right. 0 is straight"""
@@ -195,10 +210,12 @@ class Mover:
             self._mover.on(speed, inside_speed)
         else:
             self._mover.on(inside_speed, speed)
-    
+
     def stop(self):
         """Make robot stop"""
         self._mover.off()
+        time.sleep(0.1)
+        
 
     @staticmethod
     def _convert_distance_to_rad(distance):

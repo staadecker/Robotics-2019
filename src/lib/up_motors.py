@@ -1,7 +1,7 @@
 import math
 
 import ev3dev2.motor
-import lib.ports
+import lib.up_ports as ports
 
 
 class Lift:
@@ -20,7 +20,7 @@ class Lift:
 
     def __init__(self):
         self._position = self._POS_UP
-        self._lift = ev3dev2.motor.MediumMotor(lib.ports.LIFT_MOTOR)
+        self._lift = ev3dev2.motor.MediumMotor(ports.LIFT_MOTOR)
 
         self._lift.ramp_up_sp = self._ACCELERATION
 
@@ -30,7 +30,7 @@ class Lift:
         self._lift.on(self._DEFAULT_SPEED)
         self._lift.wait_until_not_moving()
 
-        self._lift.on_for_degrees(-self._DEFAULT_SPEED, 50, block=False)
+        self._lift.on_for_degrees(-self._DEFAULT_SPEED, 50, block=True)
 
         self._position = self._POS_UP
 
@@ -75,7 +75,7 @@ class Swivel:
     _START_POSITION = 0
 
     def __init__(self):
-        self._swivel = ev3dev2.motor.MediumMotor(lib.ports.SWIVEL_MOTOR)
+        self._swivel = ev3dev2.motor.MediumMotor(ports.SWIVEL_MOTOR)
         self._swivel.ramp_up_sp = self._ACCELERATION
         self._swivel.ramp_down_sp = self._ACCELERATION
         self._swivel.position = self._START_POSITION
@@ -101,20 +101,21 @@ class Mover:
     """Class to move the robot"""
 
     _WHEEL_RADIUS = 28
-    CHASSIS_RADIUS = 71
+    CHASSIS_RADIUS = 67
 
     _DEFAULT_SPEED = 40
     _DEFAULT_ROTATE_SPEED = 30
-    _ACCELERATION = 900
+    _RAMP_UP = 900
+    _RAMP_DOWN = 300
 
     def __init__(self, reverse_motors=False):
-        self._mover = ev3dev2.motor.MoveTank(lib.ports.LEFT_MOTOR, lib.ports.RIGHT_MOTOR,
+        self._mover = ev3dev2.motor.MoveTank(ports.LEFT_MOTOR, ports.RIGHT_MOTOR,
                                              motor_class=ev3dev2.motor.MediumMotor)
 
-        self._mover.left_motor.ramp_up_sp = self._ACCELERATION
-        self._mover.right_motor.ramp_up_sp = self._ACCELERATION
-        self._mover.left_motor.ramp_down_sp = self._ACCELERATION
-        self._mover.right_motor.ramp_down_sp = self._ACCELERATION
+        self._mover.left_motor.ramp_up_sp = self._RAMP_UP
+        self._mover.right_motor.ramp_up_sp = self._RAMP_UP
+        self._mover.left_motor.ramp_down_sp = self._RAMP_DOWN
+        self._mover.right_motor.ramp_down_sp = self._RAMP_DOWN
 
         for motor in self._mover.motors.values():
             if reverse_motors:

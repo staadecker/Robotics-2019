@@ -61,12 +61,12 @@ class LineFollower:
 
         if stop:
             self.mover.stop()
+            self.last_error = None
 
     def follow_until_color(self, color_sensor: sensors.ColorSensor, colours, stop=True, **kwargs):
         while not color_sensor.get_color() in colours:
             self.follow(**kwargs)
 
-        print("MARK")
         if stop:
             self.mover.stop()
             self.last_error = None

@@ -112,10 +112,10 @@ class Mover:
         self._mover = ev3dev2.motor.MoveTank(ports.LEFT_MOTOR, ports.RIGHT_MOTOR,
                                              motor_class=ev3dev2.motor.MediumMotor)
 
-        self._mover.left_motor.ramp_up_sp = self._RAMP_UP
-        self._mover.right_motor.ramp_up_sp = self._RAMP_UP
-        self._mover.left_motor.ramp_down_sp = self._RAMP_DOWN
-        self._mover.right_motor.ramp_down_sp = self._RAMP_DOWN
+        self._mover.left_motor.ramp_up_sp = 0 #self._RAMP_UP
+        self._mover.right_motor.ramp_up_sp = 0 #self._RAMP_UP
+        self._mover.left_motor.ramp_down_sp = 0 #self._RAMP_DOWN
+        self._mover.right_motor.ramp_down_sp = 0 #self._RAMP_DOWN
 
         for motor in self._mover.motors.values():
             if reverse_motors:

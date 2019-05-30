@@ -16,6 +16,7 @@ class LineFollower:
         self.back_sensor = back_sensor
         self.front_sensor = front_sensor
         self.last_error = None
+        self.direction = None
 
     def follow(self,
                on_left=True,
@@ -35,21 +36,21 @@ class LineFollower:
         error = self._MIDDLE_VALUE - sensor_value
 
         if self.last_error is None:
-            direction = kp * error
+            self.direction = kp * error
         else:
-            direction = kp * error + kd * (error - self.last_error)
+            self.direction = kp * error + kd * (error - self.last_error)
 
         if on_left != backwards:
-            direction *= -1
+            self.direction *= -1
 
-        if direction > 100:
-            direction = 100
+        if self.direction > 100:
+            self.direction = 100
             print("Warning: Steering at +100")
-        if direction < -100:
-            direction = -100
+        if self.direction < -100:
+            self.direction = -100
             print("Warning: Steering at -100")
 
-        self.mover.steer(direction, speed=(speed * (-0.8 if backwards else 1)))
+        self.mover.steer(self.direction, speed=(speed * (-0.8 if backwards else 1)))
 
         self.last_error = error
 
@@ -61,7 +62,7 @@ class LineFollower:
 
         if stop:
             self.mover.stop()
-            self.last_error = None
+            self.reset()
 
     def follow_until_color(self, color_sensor: sensors.ColorSensor, colours, stop=True, **kwargs):
         while not color_sensor.get_color() in colours:
@@ -69,7 +70,7 @@ class LineFollower:
 
         if stop:
             self.mover.stop()
-            self.last_error = None
+            self.reset()
 
     def follow_until_line(self, color_sensor: sensors.ColorSensor, stop=True, **kwargs):
         self.follow_until_color(color_sensor, (sensors.BLACK,), stop=stop, **kwargs)
@@ -87,4 +88,51 @@ class LineFollower:
 
         if stop:
             self.mover.stop()
-            self.last_error = None
+            self.reset()
+
+    def follow_until_cutoff(self, sensor: sensors.EV3ColorSensor, cutoff, greater_than, stop=True, **kwargs):
+        if greater_than:
+            while sensor.get_reflected() < cutoff:
+                self.follow(**kwargs)
+        else:
+            while sensor.get_reflected() > cutoff:
+                self.follow(**kwargs)
+
+        if stop:
+            self.mover.stop()
+            self.reset()
+
+    def follow_until_constant(self, stop=True, cutoff=6, **kwargs):
+        in_a_row = 0
+        while True:
+            print(self.direction)
+            self.follow(**kwargs)
+            if self.direction is None:
+                in_a_row = 0
+                continue
+            
+            in_a_row +=1
+
+            if abs(self.direction) > cutoff:
+                in_a_row = 0
+
+            if in_a_row == 10:
+                break
+
+        if stop:
+            self.mover.stop()
+            self.reset()
+
+    def follow_until_change(self, stop=True, cutoff=10, **kwargs):
+        while self.direction is not None and abs(self.direction) > cutoff:
+            print(self.direction)
+            self.follow(**kwargs)
+
+        if stop:
+            self.mover.stop()
+            self.reset()
+        
+            
+
+    def reset(self):
+        self.last_error = None

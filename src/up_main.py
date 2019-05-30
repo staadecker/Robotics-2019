@@ -42,19 +42,18 @@ class Main:
 
         self.line_follower = line_follower.LineFollower(self.mover, self.front_sensor, self.back_sensor)
 
+        self.color_codes = []
+
     def end(self):
         self.mover.stop()
         self.swivel.reset()
         self.lift.up()
 
     def test(self):
-        color = 0
-        while True:
-            new_color = self.right_sensor.get_color()
-            if new_color != color:
-                print(new_color)
-                beep()
-                color = new_color
+        self.prepare()
+        self.do_first_node()
+
+        self.end()
 
     def run(self):
         self.prepare()
@@ -71,14 +70,27 @@ class Main:
     def go_to_first_fibre(self):
         self.mover.rotate(10, clockwise=False)
         self.mover.travel(100)
-        self.line_follower.follow_until_line(self.left_sensor, speed=50)
+
+        # Scan blocks
+        while not self.left_sensor.get_color() == sensors.BLACK:
+            self.line_follower.follow(speed=40)
+
+            color = self.right_sensor.get_color()
+            if (
+                    color == sensors.RED or color == sensors.BLUE or color == sensors.YELLOW or color == sensors.GREEN) and (
+                    color not in self.color_codes):
+                self.color_codes.append(color)
+
+        self.line_follower.reset()
+        self.mover.stop()
+
         self.rotate_until_line(clockwise=False, arc_radius=60)
         self.line_follower.follow_until_intersection_x(6, self.left_sensor, on_left=False)
 
         # Line up
-
-        self.mover.rotate(arc_radius=71, clockwise=False, block=False, speed=30)
+        self.mover.rotate(arc_radius=71, clockwise=False, block=False, speed=20)
         self.wait_for_colors(self.right_sensor, (sensors.BLACK,))
+
         self.mover.rotate(block=False, speed=30)
         self.wait_for_white_cutoff(self.front_sensor)
         self.wait_for_black_cutoff(self.front_sensor, 20)
@@ -87,7 +99,7 @@ class Main:
 
         self.lift.to_fibre()
         self.line_follower.follow_until_color(self.left_sensor, (sensors.YELLOW,), on_left=False,
-                                              speed=15, kp=1, kd=0)
+                                              speed=15, kp=1.5, kd=0)
 
     def go_to_fibre_drop_off(self):
         # Find line
@@ -101,7 +113,25 @@ class Main:
         self.mover.rotate(degrees=90, clockwise=False, arc_radius=105)
 
         # Follow across
-        self.line_follower.follow_until_intersection_x(2, self.left_sensor, on_left=False)
+        time_first_cross = None
+        first_node_is_black = False
+        while True:
+            self.line_follower.follow(on_left=False, speed=50)
+
+            if self.left_sensor.get_color() == sensors.BLACK:
+                if time_first_cross is None:
+                    time_first_cross = time.time()
+                elif time.time() > time_first_cross + 0.3:
+                    self.mover.stop()
+                    self.line_follower.reset()
+                    break
+
+            if time_first_cross is None or time.time() < time_first_cross + 0.3:
+                if self.right_sensor.get_color() == sensors.BLACK:
+                    first_node_is_black = True
+
+        if first_node_is_black:
+            self.do_first_node()
 
         # Turn
         self.mover.rotate(clockwise=False, arc_radius=50, block=False)
@@ -116,6 +146,37 @@ class Main:
         while not self.left_sensor.get_color() == sensors.WHITE:
             pass
         self.mover.stop()
+
+    def do_first_node(self):
+        self.mover.rotate(clockwise=True, arc_radius=100, degrees=90, backwards=True)
+
+        self.mover.rotate(block=False)
+        self.wait_for_white_cutoff(self.back_sensor)
+        self.wait_for_black_cutoff(self.back_sensor, cutoff=20)
+        self.mover.stop()
+        self.swivel.back()
+
+        self.line_follower.follow_until_line(self.right_sensor, backwards=True, speed=15, kp=2, kd=0.5)
+        self.lift.to_node()
+        self.line_follower.follow_for_time(0.5, speed=15, kp=2, kd=0.5, on_left=False)
+        self.lift.up()
+
+        self.line_follower.follow_until_cutoff(self.back_sensor, 15, False, stop=False, on_left=False, speed=50)
+        self.line_follower.follow_until_cutoff(self.back_sensor, 30, True, on_left=False, speed=50)
+
+        self.rotate_until_line(clockwise=False, cross_line=True, front=False)
+
+        self.line_follower.follow_until_constant(speed=20, kp=1.5, kd=0.5, backwards=True, cutoff=10)
+        beep()
+        self.line_follower.follow_until_change(speed=20, kp=1.5, kd=0.5, backwards=True, cutoff=30)
+        beep()
+
+        self.mover.travel(speed=10, block=False, backwards=True)
+        self.wait_for_colors(self.front_sensor, (sensors.RED,))
+        beep()
+        self.wait_for_colors(self.front_sensor, (sensors.WHITE,))
+        self.mover.stop()
+
 
     def prepare(self):
         ###########

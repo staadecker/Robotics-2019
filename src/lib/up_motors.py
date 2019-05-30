@@ -12,7 +12,7 @@ class Lift:
 
     # Degrees predictions for arm
     _DEG_TO_FIBRE = 580
-    _DEG_TO_NODE = 500
+    _DEG_TO_NODE = 520
 
     _POS_UP = 0
     _POS_FIBRE = 1
@@ -81,16 +81,16 @@ class Swivel:
         self._swivel.position = self._START_POSITION
         self._swivel.stop_action = ev3dev2.motor.Motor.STOP_ACTION_HOLD
 
-    def forward(self, block=False):
+    def forward(self, block=True):
         self._swivel.on_to_position(self._DEFAULT_SPEED, 0, block=block)
 
-    def left(self, block=False):
+    def left(self, block=True):
         self._swivel.on_to_position(self._DEFAULT_SPEED, 90, block=block)
 
-    def right(self, block=False):
+    def right(self, block=True):
         self._swivel.on_to_position(self._DEFAULT_SPEED, -90, block=block)
 
-    def back(self, block=False):
+    def back(self, block=True):
         self._swivel.on_to_position(self._DEFAULT_SPEED, 180, block=block)
 
     def reset(self):

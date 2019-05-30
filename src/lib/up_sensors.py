@@ -8,6 +8,7 @@ RED = lego_sensor.ColorSensor.COLOR_RED
 YELLOW = lego_sensor.ColorSensor.COLOR_YELLOW
 NO_COLOR = lego_sensor.ColorSensor.COLOR_NOCOLOR
 BROWN = lego_sensor.ColorSensor.COLOR_BROWN
+WHITE_SHADE = 10
 UNKNOWN = -1
 
 
@@ -24,10 +25,13 @@ class HiTechnicSensor(ColorSensor):
         self.sensor = lego_sensor.Sensor(address=port)
         self.sensor.mode = "COLOR"
 
+    def get_raw_color_code(self):
+        return self.sensor.value()
+
     def get_color(self):
         """Returns the color under the sensor"""
         # self.sensor._ensure_mode("COLOR")
-        return HiTechnicSensor.convert_code_to_color(self.sensor.value())
+        return HiTechnicSensor.convert_code_to_color(self.get_raw_color_code())
 
     @staticmethod
     def convert_code_to_color(code):
@@ -39,10 +43,12 @@ class HiTechnicSensor(ColorSensor):
             return BLUE
         elif code == 4:
             return GREEN
-        elif code == 6:
+        elif code == 6 or code == 5:
             return YELLOW
-        elif code == 8:
+        elif code == 9:
             return RED
+        elif code >= 11:
+            return WHITE_SHADE
         else:
             print("ERROR: Got color code %s and don't know its color" % code)
             return UNKNOWN
@@ -56,8 +62,10 @@ class EV3ColorSensor(ColorSensor):
 
     def get_color(self):
         """Returns the color under the sensor"""
+        # self.sensor._ensure_mode(lego_sensor.ColorSensor.MODE_COL_COLOR)
         return self.sensor.color
 
     def get_reflected(self):
         """Returns the amount of light reflected (percentage)"""
+        # self.sensor._ensure_mode(lego_sensor.ColorSensor.MODE_COL_REFLECT)
         return self.sensor.reflected_light_intensity

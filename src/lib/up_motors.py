@@ -11,7 +11,7 @@ class Lift:
     _DEFAULT_SPEED = 80
 
     # Degrees predictions for arm
-    _DEG_TO_FIBRE = 580
+    _DEG_TO_FIBRE = 578
     _DEG_TO_NODE = 520
 
     _POS_UP = 0

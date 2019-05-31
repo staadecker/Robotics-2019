@@ -53,7 +53,9 @@ class Main:
 
         self.position_of_top_white = 2
 
-        self.do_first_node()
+        self.do_other_nodes()
+
+        # self.middle_to_red_drop()
 
         # self.mover.rotate(clockwise=False, arc_radius=120, block=False)
         # self.wait_for_colors(self.left_sensor, (sensors.BLACK,))
@@ -63,8 +65,6 @@ class Main:
         # self.mover.rotate(degrees=45, clockwise=False, arc_radius=70)
         # self.mover.rotate(degrees=30, backwards=True, clockwise=False, arc_radius=20)
 
-
-        
     def run(self):
         self.go_to_first_fibre()
         self.lift.up()
@@ -72,8 +72,8 @@ class Main:
 
         self.lift.to_fibre()
         self.lift.up()
-        self.do_second_node()
-        self.go_to_second_fibre()
+
+        self.do_other_nodes()
 
     def go_to_first_fibre(self):
         # Find line
@@ -163,9 +163,13 @@ class Main:
         print("TOP WHITE AT:")
         print(self.position_of_top_white)
 
+        # Do first node
         if self.position_of_top_white != 0:
-            self.do_first_node()
-
+            self.go_middle_to_line_up_with_first_node()
+            self.pickup_node()
+            self.turn_around_to_node_line()
+            self.drop_off_node(sensors.RED)
+            self.go_red_to_middle()
         else:
             # Turn
             self.mover.rotate(clockwise=False, arc_radius=50, block=False)
@@ -181,7 +185,7 @@ class Main:
             pass
         self.mover.stop()
 
-    def do_first_node(self):
+    def go_middle_to_line_up_with_first_node(self):
         # Reverse into position
         self.mover.rotate(clockwise=True, arc_radius=115, degrees=90, backwards=True)
 
@@ -192,12 +196,15 @@ class Main:
         self.mover.stop()
         self.swivel.back()
 
+    def pickup_node(self):
         # Pick up node
+        self.swivel.back()
         self.line_follower.follow_until_line(self.right_sensor, backwards=True, speed=15, kp=2, kd=0.5)
         self.lift.to_node()
         self.line_follower.follow_for_time(0.7, speed=10, kp=1, on_left=False)
         self.lift.up()
 
+    def turn_around_to_node_line(self):
         # Move back
         self.line_follower.follow_until_cutoff(self.back_sensor, 15, False, stop=False, on_left=False, speed=50)
         self.line_follower.follow_until_cutoff(self.back_sensor, 30, True, on_left=False, speed=50)
@@ -205,15 +212,7 @@ class Main:
         # Turn around
         self.rotate_until_line(clockwise=False, cross_line=True, front=False)
 
-        # Go to drop off        
-        self.line_follower.follow_until_constant(speed=20, kp=1.5, kd=0.5, backwards=True, cutoff=5, cycles=3, stop=False, use_correction=False)
-        self.line_follower.follow_until_change(speed=20, kp=1.5, kd=0.5, backwards=True, cutoff=15, cycles=2, use_correction=False)
-        self.mover.travel(distance=15, backwards=True, speed=20)
-
-        self.orient_block(sensors.RED)
-
-        self.place_node_in_slot()
-
+    def go_red_to_middle(self):
         # Go back to fibre
         self.line_follower.follow_until_line(self.left_sensor, on_left=False)
         self.mover.rotate(clockwise=False, block=False, arc_radius=71)
@@ -221,37 +220,88 @@ class Main:
         self.wait_for_black_cutoff(self.front_sensor)
         self.line_follower.follow_until_line(self.left_sensor, on_left=False)
 
-
-    def do_second_node(self):
-        if self.position_of_top_white == 1:
-            self.pickup_top_middle_node()
+    def do_other_nodes(self):
+        if self.position_of_top_white == 0:
+            self.go_fibre_one_to_middle_node()
+            self.pickup_node()
+            self.middle_to_red_drop()
+            self.drop_off_node(sensors.RED)
+            self.go_from_red_drop_to_line_up_third()
+            self.pickup_node()
+            self.turn_around_to_node_line()
+            self.drop_off_node(sensors.BLUE)
+        elif self.position_of_top_white == 1:
+            self.go_to_third_node_from_first_fibre()
+            self.pickup_node()
+            self.turn_around_to_node_line()
+            self.drop_off_node(sensors.BLUE)
         else:
-            self.pickup_top_far_node()
+            self.go_fibre_one_to_middle_node()
+            self.pickup_node()
+            self.go_pickup_middle_to_blue()
+            self.drop_off_node(sensors.BLUE)
 
-        self.drop_off_node()
+    def go_to_third_node_from_first_fibre(self):
+        self.mover.rotate(clockwise=False, degrees=90, arc_radius=270, backwards=True)
+        self.mover.rotate(degrees=90, arc_radius=60)
 
-    def pickup_top_middle_node(self):
+    def go_pickup_middle_to_blue(self):
+        self.mover.rotate(block=False, clockwise=False)
+        self.wait_for_white_cutoff(self.back_sensor)
+        self.wait_for_black_cutoff(self.back_sensor)
+        self.mover.stop()
+
+        self.line_follower.follow_for_time(0.5, backwards=True, stop=False, speed=30, kp=1, kd=0, on_left=False)
+        
+        self.mover.rotate(degrees=85, arc_radius=100, backwards=True, clockwise=False)
+
+    def middle_to_red_drop(self):
+        self.mover.rotate(block=False)
+        self.wait_for_white_cutoff(self.back_sensor)
+        self.wait_for_black_cutoff(self.back_sensor)
+        self.wait_for_white_cutoff(self.back_sensor)
+        self.mover.stop()
+
+        self.line_follower.follow_for_time(0.5, backwards=True, on_left=False, stop=False, speed=30, kp=1, kd=0)
+        self.line_follower.follow_until_line(self.left_sensor, backwards=True, on_left=False)
+
+        self.mover.rotate(degrees=80, arc_radius=110, backwards=True)
+
+    def go_from_red_drop_to_line_up_third(self):
+        self.mover.rotate(clockwise=False, degrees=90, arc_radius=270)
+        self.line_follower.follow_until_intersection_x(2, self.left_sensor, on_left=False)
+
+        # Reverse into position
+        self.mover.rotate(clockwise=True, arc_radius=160, degrees=90, backwards=True)
+
+        # Turn around
+        self.mover.rotate(block=False)
+        self.wait_for_white_cutoff(self.back_sensor)
+        self.wait_for_black_cutoff(self.back_sensor, cutoff=20)
+        self.mover.stop()
+
+    def drop_off_node(self, color):
+        # Go to drop off        
+        self.line_follower.follow_until_constant(speed=20, kp=1.5, kd=0.5, backwards=True, cutoff=5, cycles=3,
+                                                 stop=False, use_correction=False)
+        self.line_follower.follow_until_change(speed=20, kp=1.5, kd=0.5, backwards=True, cutoff=15, cycles=2,
+                                               use_correction=False)
+        self.mover.travel(distance=15, backwards=True, speed=20)
+
+        # Drop off
+        self.orient_block(color)
+        self.place_node_in_slot()
+
+    def go_fibre_one_to_middle_node(self):
         # Pick up node
-        self.line_follower.follow_for_time(0.3, backwards=True)
-        self.line_follower.follow_until_line(self.left_sensor, speed=15, backards=True, kp=2, kd=0.5)
-        self.lift.to_node()
-        self.line_follower.follow_for_time(0.5, speed=10, kp=1, kd=0, on_left=False)
-        self.lift.up()
-
-    def pickup_top_far_node(self):
-        pass  # TODO
-
-    def drop_off_node(self):
-        pass  # TODO
-
-    def go_to_second_fibre(self):
-        pass  # TODO
+        self.line_follower.follow_for_time(0.3, backwards=True, stop=True)
 
     def place_node_in_slot(self):
         self.lift._lift.on_for_degrees(-self.lift._DEFAULT_SPEED, 280)
 
         self.mover.travel(distance=10, backwards=True, speed=20)
-        self.mover.travel(distance=10, speed=20)
+        self.mover.travel(distance=20, speed=20)
+        self.mover.travel(distance=10, backwards=True, speed=20)
 
         self.mover.rotate(degrees=5, speed=10)
 
@@ -261,17 +311,11 @@ class Main:
 
         self.mover.rotate(degrees=5, clockwise=False, speed=10)
 
- 
-
-        
         self.lift._lift.on_for_degrees(-self.lift._DEFAULT_SPEED, 240)
         self.swivel._swivel.on_for_degrees(10, 180)
         self.lift._lift.on_for_degrees(self.lift._DEFAULT_SPEED, 520)
 
-
         time.sleep(2)
-
-
 
     ###############
     #  UTILITIES  #

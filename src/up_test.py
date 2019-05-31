@@ -2,5 +2,7 @@
 
 import up_main as main
 
-main.Main().test()
-
+main = main.Main()
+main.setup()
+main.test()
+main.teardown()

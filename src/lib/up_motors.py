@@ -1,6 +1,6 @@
 import math
 
-import ev3dev2.motor
+import ev3dev2.motor as motor
 import lib.up_ports as ports
 import time
 
@@ -8,11 +8,11 @@ class Lift:
     """Class to control arm of robot"""
 
     _ACCELERATION = 1000  # Time in milliseconds the motor would take to reach 100% max speed from not moving
-    _DEFAULT_SPEED = 80
+    _DEFAULT_SPEED = motor.SpeedRPM(192)
 
     # Degrees predictions for arm
     _DEG_TO_FIBRE = 578
-    _DEG_TO_NODE = 520
+    _DEG_TO_NODE = 495
 
     _POS_UP = 0
     _POS_FIBRE = 1
@@ -20,17 +20,17 @@ class Lift:
 
     def __init__(self):
         self._position = self._POS_UP
-        self._lift = ev3dev2.motor.MediumMotor(ports.LIFT_MOTOR)
+        self._lift = motor.MediumMotor(ports.LIFT_MOTOR)
 
         self._lift.ramp_up_sp = self._ACCELERATION
 
-        self._lift.polarity = ev3dev2.motor.Motor.POLARITY_NORMAL
+        self._lift.polarity = motor.Motor.POLARITY_NORMAL
 
     def calibrate(self):
         self._lift.on(self._DEFAULT_SPEED)
         self._lift.wait_until_not_moving()
 
-        self._lift.on_for_degrees(-self._DEFAULT_SPEED, 50, block=True)
+        self._lift.on_for_degrees(self._DEFAULT_SPEED, -50, block=True)
 
         self._position = self._POS_UP
 
@@ -50,7 +50,7 @@ class Lift:
         """Lowers arm the degrees to pick up the fibre"""
 
         if self._position == self._POS_UP:
-            self._lift.on_for_degrees(-self._DEFAULT_SPEED, self._DEG_TO_FIBRE, block=block)
+            self._lift.on_for_degrees(self._DEFAULT_SPEED, -self._DEG_TO_FIBRE, block=block)
 
             self._position = self._POS_FIBRE
         else:
@@ -60,7 +60,7 @@ class Lift:
         """Lowers arm the degrees to pick up the fibre"""
 
         if self._position == self._POS_UP:
-            self._lift.on_for_degrees(-self._DEFAULT_SPEED, self._DEG_TO_NODE, block=block)
+            self._lift.on_for_degrees(self._DEFAULT_SPEED, -self._DEG_TO_NODE, block=block)
 
             self._position = self._POS_NODE
         else:
@@ -71,15 +71,15 @@ class Swivel:
     """Class to control the robot's swivel"""
 
     _ACCELERATION = 300  # Time in milliseconds the motor would take to reach 100% max speed from not moving
-    _DEFAULT_SPEED = 80  # In percent
+    _DEFAULT_SPEED = motor.SpeedRPM(80)  # In percent
     _START_POSITION = 0
 
     def __init__(self):
-        self._swivel = ev3dev2.motor.MediumMotor(ports.SWIVEL_MOTOR)
+        self._swivel = motor.MediumMotor(ports.SWIVEL_MOTOR)
         self._swivel.ramp_up_sp = self._ACCELERATION
         self._swivel.ramp_down_sp = self._ACCELERATION
         self._swivel.position = self._START_POSITION
-        self._swivel.stop_action = ev3dev2.motor.Motor.STOP_ACTION_HOLD
+        self._swivel.stop_action = motor.Motor.STOP_ACTION_HOLD
 
     def forward(self, block=True):
         self._swivel.on_to_position(self._DEFAULT_SPEED, 0, block=block)
@@ -109,19 +109,19 @@ class Mover:
     _RAMP_DOWN = 300
 
     def __init__(self, reverse_motors=False):
-        self._mover = ev3dev2.motor.MoveTank(ports.LEFT_MOTOR, ports.RIGHT_MOTOR,
-                                             motor_class=ev3dev2.motor.MediumMotor)
+        self._mover = motor.MoveTank(ports.LEFT_MOTOR, ports.RIGHT_MOTOR,
+                                             motor_class=motor.MediumMotor)
 
         self._mover.left_motor.ramp_up_sp = 0 #self._RAMP_UP
         self._mover.right_motor.ramp_up_sp = 0 #self._RAMP_UP
         self._mover.left_motor.ramp_down_sp = 0 #self._RAMP_DOWN
         self._mover.right_motor.ramp_down_sp = 0 #self._RAMP_DOWN
 
-        for motor in self._mover.motors.values():
+        for my_motor in self._mover.motors.values():
             if reverse_motors:
-                motor.polarity = ev3dev2.motor.Motor.POLARITY_INVERSED
+                my_motor.polarity = motor.Motor.POLARITY_INVERSED
             else:
-                motor.polarity = ev3dev2.motor.Motor.POLARITY_NORMAL
+                my_motor.polarity = motor.Motor.POLARITY_NORMAL
 
     def travel(self, distance=None, speed=_DEFAULT_SPEED, block=True, backwards=False):
         """Make the robot move forward or backward a certain number of mm"""

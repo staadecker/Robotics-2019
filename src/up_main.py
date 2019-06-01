@@ -9,7 +9,7 @@ import time
 
 import ev3dev2.button as button
 
-REQUIRE_ENTER_TO_START = False
+REQUIRE_ENTER_TO_START = True
 
 
 def wait_for_enter():
@@ -49,11 +49,18 @@ class Main:
         self.lift.up()
 
     def test(self):
-        self.color_codes = [sensors.YELLOW, sensors.GREEN, sensors.RED, sensors.BLUE]
+        self.color_codes = [0, 0, 0, sensors.RED, sensors.BLUE]
 
-        self.position_of_top_white = 2
+        self.do_second_fibre()
 
-        self.do_other_nodes()
+        # self.position_of_top_white = 2
+
+        # self.do_other_nodes()
+
+        # self.do_other_nodes()
+        # self.drop_off_node(sensors.RED)
+        # self.go_from_red_drop_to_line_up_third()
+        # self.line_follower.follow_until_intersection_x(6, self.left_sensor, on_left=False)
 
         # self.middle_to_red_drop()
 
@@ -75,10 +82,13 @@ class Main:
 
         self.do_other_nodes()
 
+        self.do_second_fibre()
+        self.return_to_start()
+
     def go_to_first_fibre(self):
         # Find line
-        self.mover.rotate(15, clockwise=False)
-        self.mover.travel(100)
+        self.mover.rotate(12, clockwise=False)
+        self.mover.travel(150)
 
         # Scan blocks
         while not self.left_sensor.get_color() == sensors.BLACK:
@@ -98,8 +108,13 @@ class Main:
         print(self.color_codes)
 
         # Turn and go to end
-        self.rotate_until_line(clockwise=False, arc_radius=60)
-        self.line_follower.follow_until_intersection_x(6, self.left_sensor, on_left=False, use_reflection=True)
+        self.mover.rotate(clockwise=False, arc_radius=60, block=False, speed=20)
+        self.wait_for_white_cutoff(self.front_sensor, cutoff=50)
+        self.wait_for_black_cutoff(self.front_sensor, cutoff=30)
+        self.mover.stop()
+
+        self.line_follower.follow_until_intersection_x(6, self.left_sensor, on_left=False, use_reflection=True,
+                                                       speed=60)
 
         # Line up
         self.mover.rotate(arc_radius=71, clockwise=False, block=False, speed=15)
@@ -121,28 +136,28 @@ class Main:
         self.mover.rotate(degrees=25, speed=20)
 
         # Follow line and turn
-        self.line_follower.follow_until_constant(backwards=True, stop=False, cycles=5, speed=30, kp=0.7, kd=0)
-        self.line_follower.follow_for_time(0.5, stop=False, backwards=True)
-        self.line_follower.follow_until_line(self.left_sensor, backwards=True)
-        self.mover.rotate(degrees=90, clockwise=False, arc_radius=95)
+        self.line_follower.follow_for_time(1, backwards=True, speed=40, stop=True, kp=1, kd=0)
+        time.sleep(0.5)
+        self.line_follower.follow_until_line(self.left_sensor, backwards=True, speed=40)
+        self.mover.rotate(degrees=90, clockwise=False, arc_radius=90)
 
         # Follow across
         time_first_cross = None
         first_node_is_white = True
         while True:
-            self.line_follower.follow(on_left=False, speed=50)
+            self.line_follower.follow(on_left=False, speed=30)
 
             # If hasn't crossed yet
             if time_first_cross is None:
                 if self.left_sensor.get_color() == sensors.BLACK:
                     time_first_cross = time.time()
-            elif time.time() > time_first_cross + 0.1:
-                if self.left_sensor.get_color() == sensors.BLACK:
+            elif time.time() > time_first_cross + 0.15:
+                if self.left_sensor.get_reflected() < 25:
                     self.mover.stop()
                     self.line_follower.reset()
                     break
 
-            if time_first_cross is None or time.time() < time_first_cross + 0.1:
+            if time_first_cross is None or time.time() < time_first_cross + 0.15:
                 if self.right_sensor.get_color() == sensors.BLACK:
                     first_node_is_white = False
 
@@ -185,13 +200,15 @@ class Main:
             pass
         self.mover.stop()
 
+        self.mover.travel(distance=10)
+
     def go_middle_to_line_up_with_first_node(self):
         # Reverse into position
         self.mover.rotate(clockwise=True, arc_radius=115, degrees=90, backwards=True)
 
         # Turn around
-        self.mover.rotate(block=False)
-        self.wait_for_white_cutoff(self.back_sensor)
+        self.mover.rotate(block=False, speed=40)
+        time.sleep(0.2)
         self.wait_for_black_cutoff(self.back_sensor, cutoff=20)
         self.mover.stop()
         self.swivel.back()
@@ -199,22 +216,25 @@ class Main:
     def pickup_node(self):
         # Pick up node
         self.swivel.back()
-        self.line_follower.follow_until_line(self.right_sensor, backwards=True, speed=15, kp=2, kd=0.5)
+        self.line_follower.follow_until_line(self.right_sensor, backwards=True, speed=20, kp=2, kd=0.5)
         self.lift.to_node()
-        self.line_follower.follow_for_time(0.7, speed=10, kp=1, on_left=False)
+        self.line_follower.follow_for_time(0.5, speed=20, kp=1, on_left=False)
         self.lift.up()
 
     def turn_around_to_node_line(self):
         # Move back
-        self.line_follower.follow_until_cutoff(self.back_sensor, 15, False, stop=False, on_left=False, speed=50)
-        self.line_follower.follow_until_cutoff(self.back_sensor, 30, True, on_left=False, speed=50)
+        self.line_follower.follow_for_time(0.3, on_left=False, speed=50)
 
         # Turn around
-        self.rotate_until_line(clockwise=False, cross_line=True, front=False)
+        self.mover.rotate(clockwise=False, block=False, speed=20)
+        self.wait_for_white_cutoff(self.back_sensor, cutoff=50)
+        self.wait_for_black_cutoff(self.back_sensor, cutoff=30)
+        self.wait_for_white_cutoff(self.back_sensor, cutoff=50)
+        self.mover.stop()
 
     def go_red_to_middle(self):
         # Go back to fibre
-        self.line_follower.follow_until_line(self.left_sensor, on_left=False)
+        self.line_follower.follow_until_cutoff(self.left_sensor, 20, False, on_left=False)
         self.mover.rotate(clockwise=False, block=False, arc_radius=71)
         self.wait_for_white_cutoff(self.front_sensor)
         self.wait_for_black_cutoff(self.front_sensor)
@@ -252,8 +272,8 @@ class Main:
         self.mover.stop()
 
         self.line_follower.follow_for_time(0.5, backwards=True, stop=False, speed=30, kp=1, kd=0, on_left=False)
-        
-        self.mover.rotate(degrees=85, arc_radius=100, backwards=True, clockwise=False)
+
+        self.mover.rotate(degrees=85, arc_radius=80, backwards=True, clockwise=False)
 
     def middle_to_red_drop(self):
         self.mover.rotate(block=False)
@@ -268,70 +288,143 @@ class Main:
         self.mover.rotate(degrees=80, arc_radius=110, backwards=True)
 
     def go_from_red_drop_to_line_up_third(self):
-        self.mover.rotate(clockwise=False, degrees=90, arc_radius=270)
-        self.line_follower.follow_until_intersection_x(2, self.left_sensor, on_left=False)
+        self.line_follower.follow_until_line(self.left_sensor, on_left=False)
+        self.mover.rotate(clockwise=False, degrees=90, arc_radius=20)
+        # self.mover.rotate(clockwise=False, degrees=90, arc_radius=215)
+        # self.line_follower.follow_for_time(0.3, speed=50)
+        self.line_follower.follow_until_intersection_x(3, self.left_sensor, on_left=True, speed=50)
 
         # Reverse into position
-        self.mover.rotate(clockwise=True, arc_radius=160, degrees=90, backwards=True)
+        self.mover.rotate(clockwise=True, arc_radius=150, degrees=90, backwards=True)
 
         # Turn around
         self.mover.rotate(block=False)
         self.wait_for_white_cutoff(self.back_sensor)
-        self.wait_for_black_cutoff(self.back_sensor, cutoff=20)
+        self.wait_for_black_cutoff(self.back_sensor, cutoff=30)
         self.mover.stop()
 
-    def drop_off_node(self, color):
-        # Go to drop off        
-        self.line_follower.follow_until_constant(speed=20, kp=1.5, kd=0.5, backwards=True, cutoff=5, cycles=3,
-                                                 stop=False, use_correction=False)
-        self.line_follower.follow_until_change(speed=20, kp=1.5, kd=0.5, backwards=True, cutoff=15, cycles=2,
-                                               use_correction=False)
-        self.mover.travel(distance=15, backwards=True, speed=20)
+    def drop_off_node(self, color, use_color_mode=False):
+        # TODO Fix drop off
+
+        if use_color_mode:
+            self.line_follower.follow_until_color(self.back_sensor, (color,), speed=20, backwards=True, kp=1.5, kd=0.5)
+        else:
+            self.line_follower.follow_until_constant(speed=20, kp=1.5, kd=0.5, backwards=True, cutoff=15, cycles=9,
+                                                     stop=False, use_correction=False)
+            print("LOCKED")
+            self.line_follower.follow_until_change(speed=20, kp=1.5, kd=0.5, backwards=True, cutoff=20, cycles=2,
+                                                   use_correction=False)
+
+        self.mover.travel(distance=20, backwards=True, speed=20)
 
         # Drop off
-        self.orient_block(color)
-        self.place_node_in_slot()
+        orientation = self.orient_block(color)
+        self.place_node_in_slot(orientation)
 
     def go_fibre_one_to_middle_node(self):
         # Pick up node
-        self.line_follower.follow_for_time(0.3, backwards=True, stop=True)
+        self.line_follower.follow_for_time(0.4, backwards=True, stop=True)
 
-    def place_node_in_slot(self):
-        self.lift._lift.on_for_degrees(-self.lift._DEFAULT_SPEED, 280)
+    def place_node_in_slot(self, orientation):
+        if orientation == 270:
+            time.sleep(2)
+            self.lift._lift.on_for_degrees(self.lift._DEFAULT_SPEED, -240)
+            self.mover.rotate(degrees=5, speed=20, clockwise=False)
+            self.mover.rotate(degrees=10, clockwise=True, speed=20)
+            self.mover.rotate(degrees=5, speed=20, clockwise=False)
 
-        self.mover.travel(distance=10, backwards=True, speed=20)
-        self.mover.travel(distance=20, speed=20)
-        self.mover.travel(distance=10, backwards=True, speed=20)
+        if orientation == 180 or orientation == 90:
+            time.sleep(2)
+            self.lift._lift.on_for_degrees(self.lift._DEFAULT_SPEED, -240)
+            self.mover.travel(distance=15, backwards=False, speed=20)
+            self.mover.travel(distance=15, speed=20, backwards=True)
+            self.mover.rotate(degrees=5, speed=20, clockwise=False)
+            self.mover.rotate(degrees=10, clockwise=True, speed=20)
+            self.mover.rotate(degrees=5, speed=20, clockwise=False)
+        if orientation == 0:
+            self.lift._lift.on_for_degrees(self.lift._DEFAULT_SPEED, -240)
+            self.mover.travel(distance=15, backwards=False, speed=20)
+            self.mover.travel(distance=15, speed=20, backwards=True)
+            self.mover.rotate(degrees=10, speed=20, clockwise=False)
+            self.mover.rotate(degrees=15, clockwise=True, speed=20)
+            self.mover.rotate(degrees=5, speed=20, clockwise=False)
 
-        self.mover.rotate(degrees=5, speed=10)
-
-        for i in range(1):
-            self.mover.rotate(degrees=10, clockwise=False, speed=10)
-            self.mover.rotate(degrees=10, speed=10)
-
-        self.mover.rotate(degrees=5, clockwise=False, speed=10)
-
-        self.lift._lift.on_for_degrees(-self.lift._DEFAULT_SPEED, 240)
+        self.lift._lift.on_for_degrees(self.lift._DEFAULT_SPEED, -275)
         self.swivel._swivel.on_for_degrees(10, 180)
         self.lift._lift.on_for_degrees(self.lift._DEFAULT_SPEED, 520)
 
-        time.sleep(2)
+    def do_second_fibre(self):
+
+        self.line_follower.follow_until_line(self.left_sensor, on_left=False)
+        self.mover.rotate(degrees=90, arc_radius=30, clockwise=False)
+        self.line_follower.follow_until_line(self.left_sensor, speed=40)
+        self.mover.rotate(degrees=90, arc_radius=60, clockwise=True)
+        self.line_follower.follow_until_line(self.right_sensor, speed=30)
+        self.mover.rotate(degrees=45)
+        self.mover.travel(block=False, speed=20)
+        self.wait_for_black_cutoff(self.front_sensor)
+        self.wait_for_white_cutoff(self.front_sensor)
+        self.mover.stop()
+        self.mover.travel(distance=20)
+        self.lift.to_fibre()
+        self.line_follower.follow_until_color(self.left_sensor, (sensors.YELLOW,), on_left=False,
+                                              speed=15, kp=1.5, kd=0)
+        self.lift.up()
+
+        self.mover.rotate(clockwise=True, degrees=30, speed=20)
+        self.mover.travel(backwards=True, distance=130, speed=20)
+        self.mover.rotate(degrees=25, speed=20, clockwise=False)
+
+        self.mover.rotate(clockwise=False, block=False)
+        self.wait_for_white_cutoff(self.front_sensor)
+        self.wait_for_black_cutoff(self.front_sensor)
+
+        self.line_follower.follow_until_intersection_x(5, self.left_sensor)
+
+        self.mover.rotate(clockwise=False, degrees=90, arc_radius=50)
+        self.line_follower.follow_until_intersection_x(2, self.left_sensor, on_left=False)
+
+        # Turn
+        self.mover.rotate(clockwise=False, arc_radius=50, block=False)
+        time.sleep(0.3)
+        self.wait_for_white_cutoff(self.front_sensor)
+        self.wait_for_black_cutoff(self.front_sensor)
+        self.mover.stop()
+
+        # Follow to drop off
+        self.line_follower.follow_until_color(self.left_sensor, (sensors.YELLOW,), on_left=False, speed=20, kp=1.5,
+                                              kd=0)
+        self.mover.travel(speed=15, block=False)
+        while not self.left_sensor.get_color() == sensors.WHITE:
+            pass
+        self.mover.stop()
+
+        self.mover.travel(distance=10)
+
+        self.lift.to_fibre()
+        time.sleep(0.5)
+        self.lift.up()
+
+    def return_to_start(self):
+        self.mover.rotate(degrees=90, backwards=True, arc_radius=400)
+        self.mover.travel(backwards=True, block=False)
+        time.sleep(5)
+        self.mover.rotate(degrees=90, clockwise=False, arc_radius=75)
+        self.mover.travel(backwards=True, block=False)
+
+        # self.line_follower.follow_until_intersection_x(5, self.left_sensor, on_left=False)
+        # self.mover.travel(100)
+        # self.line_follower.follow_until_line(self.right_sensor)
+        # self.mover.rotate(degrees=45)
+        # self.mover.travel(block=False)
+        # self.wait_for_white_cutoff(self.front_sensor)
+        # self.wait_for_black_cutoff(self.front_sensor)
+        # self.wait_for_white_cutoff(self.front_sensor)
+        # self.line_follower
 
     ###############
     #  UTILITIES  #
     ###############
-
-    def rotate_until_line(self, clockwise=True, arc_radius=0, stop=True, cross_line=False, front=True):
-        sensor = self.front_sensor if front else self.back_sensor
-        self.mover.rotate(clockwise=clockwise, arc_radius=arc_radius, block=False, speed=20)
-        self.wait_for_white_cutoff(sensor, cutoff=50)
-        self.wait_for_black_cutoff(sensor, cutoff=30)
-
-        if cross_line:
-            self.wait_for_white_cutoff(sensor, cutoff=50)
-
-        if stop:
-            self.mover.stop()
 
     @staticmethod
     def wait_for_black_cutoff(sensor, cutoff=40):

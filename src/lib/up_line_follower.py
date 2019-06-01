@@ -60,9 +60,11 @@ class LineFollower:
         while time.time() < start_time + time_in_sec:
             self.follow(**kwargs)
 
+
         if stop:
-            self.mover.stop()
             self.reset()
+            self.mover.stop()
+
 
     def follow_until_color(self, color_sensor: sensors.ColorSensor, colours, stop=True, **kwargs):
         while not color_sensor.get_color() in colours:
@@ -132,9 +134,9 @@ class LineFollower:
             if in_a_row == cycles:
                 break
 
-        if stop:
-            self.mover.stop()
+        if stop:    
             self.reset()
+            self.mover.stop()
 
     def follow_until_change(self, stop=True, cutoff=10, cycles=10,  use_correction=True, **kwargs):
         def get_value():
